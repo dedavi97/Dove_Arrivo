@@ -8,7 +8,7 @@ from . import costruisci, gtfs, pubblica, regioni, rete, scarica
 RADICE = Path(__file__).resolve().parent.parent
 FILE_DATI = RADICE / "docs" / "data" / "rete.json"
 
-PERIMETRO = "Piemonte"
+PERIMETRO = costruisci.ITALIA  # oppure il nome di una regione, es. "Piemonte"
 CATEGORIE_REGIONALI = {"REG", "RV", "SFM", "MET"}
 
 GTFS_URL = "https://github.com/deryclem/trenitalia-gtfs/raw/main/gtfs-trenitalia.zip"

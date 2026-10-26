@@ -5,14 +5,19 @@
 - [x] 0.1.0 Scanner Piemonte → `rete.json` + `Aggiorna_Dati.bat`
 - [x] 0.2.0 Sito: mappa con stazioni e linee, data aggiornamento, footer (+ `Avvia_Locale.bat`)
 - [x] 0.3.0 Partenza, cursori, calcolo percorsi, pannello meta, Verifica prezzo
-- [ ] 0.4.0 Estensione a tutta Italia
+- [x] 0.4.0 Estensione a tutta Italia (solo Trenitalia)
+- [ ] Prossima funzione: filtro per mostrare solo le stazioni dei comuni
+  sopra una certa soglia di abitanti (scelta dall'utente). Servono comune e
+  popolazione di ogni stazione (es. dati ISTAT sui comuni) nello scanner.
 
 ## In attesa
 - Niente al momento.
 
 ## Idee per dopo
-- Altri operatori regionali (Trenord, GTT, TILO…) non presenti nell'orario
-  Trenitalia: capire quanto ha senso spingersi.
+- Altri operatori regionali non presenti nell'orario Trenitalia: priorità
+  Trenord (Lombardia) e Trenitalia Tper (Emilia-Romagna), poi ferrovie locali
+  (GTT, FNM, Circumvesuviana, FSE, ARST…). Capire quanto ha senso spingersi
+  e se pubblicano un GTFS aperto.
 - Frecce / Intercity: sono già nell'orario Trenitalia, possibile opzione futura.
 - Autobus sostitutivi Trenitalia (es. Ivrea–Aosta chiusa per lavori): oggi esclusi.
 - "Verifica prezzo": nessun link precompilato possibile; aprire la ricerca

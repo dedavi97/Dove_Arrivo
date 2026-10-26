@@ -59,8 +59,14 @@ function changelogInHtml(markdown) {
   return parti.join("");
 }
 
+// Pallini più piccoli quando si vede tutta Italia, così non si ammassano.
 function raggioStazione(zoom) {
-  return zoom >= 12 ? 6 : zoom >= 10 ? 4.5 : 3.5;
+  return zoom >= 12 ? 6 : zoom >= 10 ? 4.5 : zoom >= 8 ? 3.5 : zoom >= 7 ? 2.8 : 2.2;
+}
+
+// Il perimetro "Italia" comprende tutte le regioni: fuori restano solo le stazioni estere.
+function nelPerimetro(stazione, perimetro) {
+  return perimetro === "Italia" ? stazione.regione !== "Estero" : stazione.regione === perimetro;
 }
 
 function testoCambi(n) {
@@ -140,8 +146,11 @@ function disegnaRete() {
     pallini.set(s.id, pallino.addTo(mappa));
   }
   mappa.on("zoomend", colora);
-  if (rete.stazioni.length) {
-    mappa.fitBounds(L.latLngBounds(rete.stazioni.map((s) => [s.lat, s.lon])), { padding: [20, 20] });
+  // Vista iniziale sulle sole stazioni del perimetro (non quelle estere a fine linea).
+  const dentro = rete.stazioni.filter((s) => nelPerimetro(s, rete.meta.perimetro));
+  const daInquadrare = dentro.length ? dentro : rete.stazioni;
+  if (daInquadrare.length) {
+    mappa.fitBounds(L.latLngBounds(daInquadrare.map((s) => [s.lat, s.lon])), { padding: [20, 20] });
   }
 }
 
@@ -154,7 +163,7 @@ function colora() {
     if (id === stato.origine) {
       stile = { radius: r + 3, color: "#ffffff", weight: 2, fillColor: colore("--origine") };
     } else if (!stato.origine) {
-      const dentro = s.regione === stato.rete.meta.perimetro;
+      const dentro = nelPerimetro(s, stato.rete.meta.perimetro);
       stile = { radius: r, color: sfondo, weight: 1, fillColor: colore(dentro ? "--stazione" : "--stazione-fuori") };
     } else if (stato.mete.has(id)) {
       const fascia_ = fascia(stato.mete.get(id).minuti);
@@ -351,7 +360,9 @@ function preparaRicerca() {
     lista.innerHTML = trovate.length
       ? trovate
           .map((s, i) => {
-            const regione = s.regione !== stato.rete.meta.perimetro ? `<span class="regione">${escapeHtml(s.regione)}</span>` : "";
+            const perimetro = stato.rete.meta.perimetro;
+            const mostra = perimetro === "Italia" || s.regione !== perimetro;
+            const regione = mostra ? `<span class="regione">${escapeHtml(s.regione)}</span>` : "";
             return `<li id="risultato-${i}" role="option" aria-selected="${i === attiva}" data-id="${escapeHtml(s.id)}">${escapeHtml(s.nome)}${regione}</li>`;
           })
           .join("")
@@ -545,5 +556,5 @@ if (typeof document !== "undefined") {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { changelogInHtml, escapeHtml, raggioStazione, testoCambi };
+  module.exports = { changelogInHtml, escapeHtml, raggioStazione, testoCambi, nelPerimetro };
 }

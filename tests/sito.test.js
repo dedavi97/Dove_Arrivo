@@ -68,6 +68,8 @@ test("escapeHtml", () => {
 });
 
 test("raggioStazione cresce con lo zoom", () => {
+  assert.ok(raggioStazione(6) < raggioStazione(7));
+  assert.ok(raggioStazione(7) < raggioStazione(8));
   assert.ok(raggioStazione(8) < raggioStazione(10));
   assert.ok(raggioStazione(10) < raggioStazione(12));
 });
@@ -97,4 +99,12 @@ test("cercaStazioni: accenti, punteggiatura e ordine dei risultati", () => {
   assert.deepStrictEqual(cercaStazioni(stazioni, "d asti").map((s) => s.nome), ["Isola d'Asti", "S.Damiano d'Asti"]);
   assert.deepStrictEqual(cercaStazioni(stazioni, "   "), []);
   assert.strictEqual(cercaStazioni(stazioni, "a", 2).length, 2);
+});
+
+test("nelPerimetro: Italia esclude solo l'estero, una regione solo sé stessa", () => {
+  const { nelPerimetro } = require("../docs/app.js");
+  assert.ok(nelPerimetro({ regione: "Sicilia" }, "Italia"));
+  assert.ok(!nelPerimetro({ regione: "Estero" }, "Italia"));
+  assert.ok(nelPerimetro({ regione: "Piemonte" }, "Piemonte"));
+  assert.ok(!nelPerimetro({ regione: "Liguria" }, "Piemonte"));
 });

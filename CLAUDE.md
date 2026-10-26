@@ -166,6 +166,20 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   stessa origine (copia di docs/ nello scratchpad + pagina di prova).
 - `Avvia_Locale.bat`: `python -m http.server 8765 --bind 127.0.0.1 --directory docs`.
 
+## Tutta Italia (dalla 0.4.0)
+- `PERIMETRO = costruisci.ITALIA` ("Italia"): si tengono i treni con almeno
+  una fermata non "Estero". Il sito usa `nelPerimetro()` per lo stesso criterio.
+- 27/10/2026: 10139 corse → 2082 treni, 1714 stazioni; rete.json 1,6 MB
+  (≈140 KB compresso, GitHub Pages lo serve in gzip). Scansione ~2,5 s.
+- Calcolo nel browser (Node, rete reale): indice 2 ms; da Milano/Roma con
+  3 cambi e 6 h ≈5 ms. Nessun problema di prestazioni.
+- **Copertura**: solo Trenitalia. Lombardia (43 stazioni: Trenord) ed
+  Emilia-Romagna (60: Trenitalia Tper è un'azienda a parte) quasi scoperte;
+  mancano es. Bergamo, Como, Varese, Ravenna. Nomi strani presenti
+  nell'orario: "Venezia Mestre Binario 1 Giardino", "Firenze Binario S.Marco Vecchio".
+- `bel_nome`: `ABBREVIAZIONI` per fine nome (`C.Le` → `Centrale`).
+- `raggioStazione`: 2,2 px sotto zoom 7, 2,8 a 7, 3,5 da 8.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

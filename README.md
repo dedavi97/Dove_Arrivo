@@ -1,6 +1,6 @@
 # Dove_Arrivo
 
-Mappa scura della rete dei treni regionali. Scegli una stazione di partenza,
+Mappa scura della rete dei treni regionali Trenitalia di tutta Italia. Scegli una stazione di partenza,
 quanti cambi al massimo e quante ore al massimo: la mappa colora le mete
 raggiungibili in base al tempo di viaggio. Cliccando una meta vedi il percorso.
 

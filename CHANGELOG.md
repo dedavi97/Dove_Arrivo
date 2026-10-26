@@ -3,6 +3,15 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.4.0 — 27/10/2026
+- Tutta Italia: 2082 treni regionali Trenitalia e 1714 stazioni (prima solo
+  il Piemonte). Il calcolo resta istantaneo anche con 3 cambi e 6 ore.
+- La ricerca mostra la regione accanto a ogni stazione.
+- Pallini più piccoli quando si guarda tutta Italia; vista iniziale
+  sull'Italia senza le stazioni estere a fine linea.
+- "Bologna C.Le" diventa "Bologna Centrale".
+- Nell'Aiuto: quali treni mancano (Trenord, Trenitalia Tper, ferrovie locali).
+
 ## 0.3.1 — 26/10/2026
 - Per ogni treno del percorso, non solo l'ultimo, la scheda dice dove
   prosegue (o se termina) e la mappa ne mostra la prosecuzione tratteggiata.

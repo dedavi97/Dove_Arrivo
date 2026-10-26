@@ -2,7 +2,11 @@
 import re
 
 from . import rete as formato
+from .regioni import ESTERO
 
+ITALIA = "Italia"  # perimetro speciale: tutte le regioni
+
+ABBREVIAZIONI = {"C.Le": "Centrale"}  # es. "BOLOGNA C.LE"
 PAROLE_MINUSCOLE = {"d", "di", "del", "della", "dei", "delle", "da", "in", "sul", "sulla", "al", "alla", "e"}
 
 
@@ -16,7 +20,10 @@ def bel_nome(nome):
         if p and p[0].isalpha() and not (i > 0 and p in PAROLE_MINUSCOLE):
             p = p[0].upper() + p[1:]
         risultato.append(p)
-    return "".join(risultato)
+    bello = "".join(risultato)
+    for breve, esteso in ABBREVIAZIONI.items():
+        bello = re.sub(rf"\b{re.escape(breve)}$", esteso, bello)
+    return bello
 
 
 def tieni_piu_veloci(corse):
@@ -41,7 +48,8 @@ def _numero(corsa):
 def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte):
     """regione_di(stazione) -> nome regione."""
     regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
-    nel_perimetro = [c for c in corse if any(regioni[s] == perimetro for s, _ in c.fermate)]
+    dentro = (lambda r: r != ESTERO) if perimetro == ITALIA else (lambda r: r == perimetro)
+    nel_perimetro = [c for c in corse if any(dentro(regioni[s]) for s, _ in c.fermate)]
     scelte = sorted(tieni_piu_veloci(nel_perimetro), key=lambda c: (_numero(c), c.numero))
     usate = sorted({s for c in scelte for s, _ in c.fermate}, key=lambda i: bel_nome(stazioni[i].nome))
 

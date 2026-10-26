@@ -132,6 +132,7 @@ def test_scegli_giorni_tipo_fuori_validita():
     ("REGGIO DI CALABRIA S.CATERINA", "Reggio di Calabria S.Caterina"),
     ("CASTELLO D'ANNONE", "Castello d'Annone"),
     ("VERBANIA-PALLANZA", "Verbania-Pallanza"),
+    ("BOLOGNA C.LE", "Bologna Centrale"),
     ("DI QUALCOSA", "Di Qualcosa"),
     ("Torino Aeroporto di Caselle", "Torino Aeroporto di Caselle"),
 ])
@@ -146,6 +147,21 @@ def test_tieni_piu_veloci():
     altra = Corsa("20", "RV", [("A", 0), ("C", 50)])
     tenute = costruisci.tieni_piu_veloci([lenta, veloce, pari, altra])
     assert sorted(c.numero for c in tenute) == ["20", "8"]
+
+
+def test_costruisci_rete_italia_esclude_solo_estero():
+    stazioni = {i: Stazione(i, n, 45.0, 7.0) for i, n in [("1", "A"), ("2", "B"), ("3", "C"), ("4", "D")]}
+    regione = {"1": "Piemonte", "2": "Sicilia", "3": "Estero", "4": "Estero"}
+    corse = [
+        Corsa("1", "REG", [("1", 0), ("2", 10)]),
+        Corsa("2", "REG", [("2", 0), ("3", 10)]),
+        Corsa("3", "REG", [("3", 0), ("4", 10)]),
+    ]
+    r = costruisci.costruisci_rete(
+        corse, stazioni, lambda s: regione[s.id], costruisci.ITALIA,
+        datetime.date(2026, 10, 26), [MERCOLEDI], "test",
+    )
+    assert [t["numero"] for t in r["treni"]] == ["1", "2"]
 
 
 def test_costruisci_rete_perimetro():
