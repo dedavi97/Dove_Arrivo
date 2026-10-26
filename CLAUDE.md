@@ -165,3 +165,30 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   formato telefono mettere il sito in un `<iframe>` largo 390 px servito dalla
   stessa origine (copia di docs/ nello scratchpad + pagina di prova).
 - `Avvia_Locale.bat`: `python -m http.server 8765 --bind 127.0.0.1 --directory docs`.
+
+## Calcolo e interfaccia (dalla 0.3.0)
+- `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
+  `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da
+  specifica, `fermateTratta`, `restoTratta`, `minutiTratta`, `fascia`
+  (<60 verde, 60–120 giallo, >120 rosso), `formattaDurata`.
+- **Soglia cambi** `SOGLIA_CAMBIO_MINUTI = 10` (introdotta il 26/10/2026,
+  da confermare con Davide): tra i percorsi trovati per una meta (uno per
+  numero di treni, sempre più veloci) se ne sceglie uno con più cambi solo se
+  risparmia ≥10 min per ogni cambio in più. Motivo: senza, Torino PN→Asti
+  usciva "34 min, cambio a Lingotto" invece del diretto da 35. L'esplorazione
+  resta sul tempo minimo puro; i minuti mostrati sono quelli veri.
+- `cercaStazioni` / `normalizzaNome` in `rete.js` (accenti e punteggiatura ignorati).
+- `app.js`: stato in un oggetto `stato` (const, quindi NON è `window.stato`:
+  nelle pagine di prova usare `iframe.contentWindow.eval("stato")`).
+  Livelli Leaflet: pane `linee` (410) < `percorso` (420) < `stazioni` (430),
+  ognuno con il suo renderer canvas.
+- Scheda della meta: in basso su telefono, a destra da 760 px. `inquadra()`
+  sposta la mappa solo se il percorso esce dall'area non coperta dalla scheda.
+- "Verifica prezzo": apre https://www.lefrecce.it/Channels.Website.WEB/ e la
+  scheda dice cosa cercare (nessun link precompilato possibile).
+- Memoria locale (`localStorage`, chiave `dove_arrivo_stato`, sempre in
+  try/catch): impostazioni + partenza/cambi/ore se "Ricorda" è attivo.
+- Prove visive: pagina `prova.html` con iframe in una copia di docs/ nello
+  scratchpad; parametri `s=partenza|meta|cambio|irraggiungibile|ricerca`,
+  `a=<nome meta>`, `cambi`, `ore`, `w`, `h`. Nei comandi bash usare percorsi
+  `cygpath -m` (con `/`): con `\$1` il nome file non si espande.

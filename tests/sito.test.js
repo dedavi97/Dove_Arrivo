@@ -88,3 +88,13 @@ test("le novità mostrate dal sito coincidono con CHANGELOG.md", () => {
   const sito = fs.readFileSync(path.join(RADICE, "docs", "CHANGELOG.md"), "utf8");
   assert.strictEqual(sito, radice, "copia CHANGELOG.md in docs/CHANGELOG.md");
 });
+
+test("cercaStazioni: accenti, punteggiatura e ordine dei risultati", () => {
+  const { cercaStazioni, normalizzaNome } = require("../docs/rete.js");
+  const stazioni = ["Asti", "Isola d'Asti", "Castello d'Annone", "S.Damiano d'Asti", "Pastìcceria"].map((nome, i) => ({ id: String(i), nome }));
+  assert.strictEqual(normalizzaNome("S.Damiano d'Asti"), "s damiano d asti");
+  assert.deepStrictEqual(cercaStazioni(stazioni, "asti").map((s) => s.nome), ["Asti", "Isola d'Asti", "S.Damiano d'Asti", "Pastìcceria"]);
+  assert.deepStrictEqual(cercaStazioni(stazioni, "d asti").map((s) => s.nome), ["Isola d'Asti", "S.Damiano d'Asti"]);
+  assert.deepStrictEqual(cercaStazioni(stazioni, "   "), []);
+  assert.strictEqual(cercaStazioni(stazioni, "a", 2).length, 2);
+});

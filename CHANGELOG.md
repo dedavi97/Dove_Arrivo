@@ -3,6 +3,18 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.3.0 — 26/10/2026
+- Scegli la stazione di partenza toccandola sulla mappa o cercandola per nome.
+- Cursori per i cambi massimi (0–3) e le ore massime di viaggio (da 30 min a 6 h).
+- Le mete si colorano per tempo di viaggio: verde sotto 1 ora, giallo 1–2 ore,
+  rosso oltre 2 ore; spente quelle non raggiungibili. Legenda sempre visibile.
+- Tocca una meta: treni da prendere, dove cambiare, tempo totale, fin dove
+  prosegue l'ultimo treno; percorso evidenziato sulla mappa, prosecuzione
+  tratteggiata. Pulsante "Verifica prezzo" verso Trenitalia e "Parti da qui".
+- Un percorso con un cambio in più viene proposto solo se fa risparmiare
+  almeno 10 minuti per cambio.
+- Impostazioni: ricordare partenza e limiti, mostrare o nascondere le linee.
+
 ## 0.2.1 — 26/10/2026
 - I dati ora uniscono gli orari di 4 mercoledì distribuiti su due mesi e
   mezzo, invece di uno solo: una linea chiusa per lavori in un giorno non

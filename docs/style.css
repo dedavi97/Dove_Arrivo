@@ -10,6 +10,12 @@
   --stazione: #d7dde6;
   --stazione-fuori: #7d8592;
   --errore: #ff8a7a;
+  --verde: #4cd480;
+  --giallo: #f5c84c;
+  --rosso: #ff6b5e;
+  --spento: #474d58;
+  --percorso: #ffffff;
+  --origine: #7cb7ff;
   --altezza-testata: 48px;
   --altezza-piede: 40px;
   color-scheme: dark;
@@ -73,19 +79,6 @@ body {
   padding: 3px 8px;
 }
 .leaflet-tooltip.nome-stazione::before { display: none; }
-
-.conteggi {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  z-index: 500;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: rgba(23, 26, 33, .88);
-  border: 1px solid var(--bordo);
-  color: var(--testo-tenue);
-  font-size: 12px;
-}
 
 /* --- stati vuoti / errori --- */
 .stato {
@@ -166,3 +159,191 @@ body {
 .novita ul { margin: 0; padding-left: 20px; color: var(--testo-tenue); }
 .novita li { margin: 3px 0; }
 .novita code { font-size: 12px; color: var(--testo); }
+
+/* --- comandi: partenza e cursori --- */
+.comandi {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--pannello);
+  border-bottom: 1px solid var(--bordo);
+  position: relative;
+  z-index: 1000;
+}
+.ricerca { position: relative; flex: 1 1 280px; max-width: 420px; }
+.ricerca input {
+  width: 100%;
+  font: inherit;
+  color: var(--testo);
+  background: var(--sfondo);
+  border: 1px solid var(--bordo);
+  border-radius: 8px;
+  padding: 8px 36px 8px 12px;
+}
+.ricerca input::placeholder { color: var(--testo-tenue); }
+.ricerca input:focus { outline: 2px solid var(--accento); outline-offset: -1px; }
+.ricerca input::-webkit-search-cancel-button { display: none; }
+.togli {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: inherit;
+  color: var(--testo-tenue);
+  background: none;
+  border: 0;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.togli:hover { color: var(--testo); }
+.risultati {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--pannello-alto);
+  border: 1px solid var(--bordo);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+.risultati li { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+.risultati li[aria-selected="true"], .risultati li:hover { background: var(--bordo); }
+.risultati .regione { color: var(--testo-tenue); font-size: 12px; margin-left: 6px; }
+
+.cursori { display: flex; gap: 20px; flex: 1 1 280px; }
+.cursore { flex: 1 1 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cursore-etichetta { font-size: 13px; color: var(--testo-tenue); }
+.cursore-etichetta output { color: var(--testo); font-weight: 600; margin-left: 4px; }
+.cursore input { width: 100%; accent-color: var(--accento); margin: 0; }
+
+/* --- sovrimpressioni sulla mappa --- */
+.suggerimento {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  margin: 0;
+  max-width: calc(100% - 120px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(23, 26, 33, .92);
+  border: 1px solid var(--bordo);
+  font-size: 13px;
+  text-align: center;
+}
+.suggerimento[hidden] { display: none; }
+
+.legenda {
+  position: absolute;
+  left: 10px;
+  bottom: 22px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-width: calc(100% - 20px);
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(23, 26, 33, .9);
+  border: 1px solid var(--bordo);
+  font-size: 12px;
+  color: var(--testo-tenue);
+}
+.legenda span { white-space: nowrap; }
+.punto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.punto.verde { background: var(--verde); }
+.punto.giallo { background: var(--giallo); }
+.punto.rosso { background: var(--rosso); }
+.punto.spento { background: var(--spento); }
+
+/* --- scheda della meta: in basso su telefono, a destra su schermi larghi --- */
+.scheda {
+  position: absolute;
+  z-index: 700;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 55%;
+  overflow-y: auto;
+  background: var(--pannello);
+  border-top: 1px solid var(--bordo);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .5);
+}
+.scheda[hidden] { display: none; }
+@media (min-width: 760px) {
+  .scheda {
+    left: auto;
+    top: 10px;
+    right: 10px;
+    bottom: auto;
+    width: 360px;
+    max-height: calc(100% - 20px);
+    border: 1px solid var(--bordo);
+    border-radius: 12px;
+  }
+}
+.scheda-testata {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 8px 16px;
+  background: var(--pannello);
+}
+.scheda-testata h2 { margin: 0; font-size: 18px; }
+.scheda-corpo { padding: 0 16px 16px; }
+.totale { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; color: var(--testo-tenue); }
+.totale strong { font-size: 22px; color: var(--testo); }
+.tratte { list-style: none; margin: 0; padding: 0; }
+.tratta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 2px 10px;
+  align-items: baseline;
+  padding: 8px 10px;
+  background: var(--pannello-alto);
+  border-radius: 8px;
+}
+.treno {
+  font-size: 12px;
+  font-weight: 650;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bordo);
+  white-space: nowrap;
+}
+.da-a { min-width: 0; }
+.durata { color: var(--testo-tenue); font-size: 13px; white-space: nowrap; }
+.cambio { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--giallo); font-size: 13px; }
+.prosegue { margin: 12px 0 0; color: var(--testo-tenue); font-size: 13px; }
+.prosegue::before { content: "┄ "; color: var(--percorso); }
+.nota { margin: 12px 0 0; color: var(--testo-tenue); font-size: 12px; }
+.azioni { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.bottone {
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--testo);
+  background: var(--pannello-alto);
+  border: 1px solid var(--bordo);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.bottone.primario { background: var(--accento); border-color: var(--accento); color: #0b1220; font-weight: 600; }
+.bottone:hover { filter: brightness(1.1); }
+.bottone:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+
+/* --- impostazioni --- */
+.scelta { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; cursor: pointer; }
+.scelta input { margin-top: 3px; accent-color: var(--accento); }

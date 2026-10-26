@@ -73,6 +73,34 @@ function segmentiUnici(rete) {
   return [...visti.values()];
 }
 
+// "S.Damiano d'Asti" -> "s damiano d asti": niente accenti, maiuscole o punteggiatura.
+function normalizzaNome(testo) {
+  return String(testo)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// Prima i nomi che iniziano col testo, poi quelli con una parola che inizia così, poi il resto.
+function cercaStazioni(stazioni, testo, massimo = 8) {
+  const cercato = normalizzaNome(testo);
+  if (!cercato) return [];
+  const trovate = [];
+  for (const s of stazioni) {
+    const nome = normalizzaNome(s.nome);
+    const pos = nome.indexOf(cercato);
+    if (pos < 0) continue;
+    const punteggio = pos === 0 ? 0 : nome[pos - 1] === " " ? 1 : 2;
+    trovate.push([punteggio, s.nome, s]);
+  }
+  trovate.sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1], "it"));
+  return trovate.slice(0, massimo).map((x) => x[2]);
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { ErroreRete, validaRete, caricaRete, formattaData, segmentiUnici, RETE_FORMATO_VERSIONE };
+  module.exports = {
+    ErroreRete, validaRete, caricaRete, formattaData, segmentiUnici, normalizzaNome, cercaStazioni, RETE_FORMATO_VERSIONE,
+  };
 }

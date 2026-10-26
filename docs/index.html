@@ -17,9 +17,41 @@
     <span id="data-dati" class="data-dati">Caricamento dati…</span>
   </header>
 
+  <section class="comandi" aria-label="Partenza e limiti">
+    <div class="ricerca">
+      <input id="cerca" type="search" placeholder="Da quale stazione parti?" autocomplete="off" spellcheck="false"
+             role="combobox" aria-label="Stazione di partenza" aria-autocomplete="list" aria-expanded="false" aria-controls="risultati">
+      <button type="button" id="togli-partenza" class="togli" aria-label="Togli la partenza" hidden>✕</button>
+      <ul id="risultati" class="risultati" role="listbox" aria-label="Stazioni trovate" hidden></ul>
+    </div>
+    <div class="cursori">
+      <label class="cursore">
+        <span class="cursore-etichetta">Cambi max <output id="val-cambi" for="cambi">1</output></span>
+        <input id="cambi" type="range" min="0" max="3" step="1" value="1">
+      </label>
+      <label class="cursore">
+        <span class="cursore-etichetta">Ore max <output id="val-ore" for="ore">2 h</output></span>
+        <input id="ore" type="range" min="0.5" max="6" step="0.5" value="2">
+      </label>
+    </div>
+  </section>
+
   <main class="contenuto">
     <div id="mappa" class="mappa" role="region" aria-label="Mappa della rete dei treni regionali"></div>
-    <div id="conteggi" class="conteggi" hidden></div>
+    <p id="suggerimento" class="suggerimento" role="status" hidden></p>
+    <div class="legenda" aria-label="Legenda">
+      <span><i class="punto verde"></i>meno di 1 h</span>
+      <span><i class="punto giallo"></i>1–2 h</span>
+      <span><i class="punto rosso"></i>oltre 2 h</span>
+      <span><i class="punto spento"></i>non raggiungibile</span>
+    </div>
+    <aside id="scheda" class="scheda" aria-labelledby="scheda-titolo" hidden>
+      <div class="scheda-testata">
+        <h2 id="scheda-titolo"></h2>
+        <button type="button" id="chiudi-scheda" class="chiudi" aria-label="Chiudi">✕</button>
+      </div>
+      <div id="scheda-corpo" class="scheda-corpo"></div>
+    </aside>
     <section id="stato" class="stato" role="status" hidden>
       <h2 id="stato-titolo"></h2>
       <p id="stato-testo"></p>
@@ -29,10 +61,28 @@
   <footer class="piede">
     <span class="versione">v<span id="versione"></span></span>
     <nav class="menu" aria-label="Menu">
+      <button type="button" data-apri="impostazioni">Impostazioni</button>
       <button type="button" data-apri="aiuto">Aiuto</button>
       <button type="button" data-apri="info">Informazioni</button>
     </nav>
   </footer>
+
+  <dialog id="impostazioni" class="finestra" aria-labelledby="impostazioni-titolo">
+    <div class="finestra-testata">
+      <h2 id="impostazioni-titolo">Impostazioni</h2>
+      <button type="button" class="chiudi" data-chiudi aria-label="Chiudi">✕</button>
+    </div>
+    <div class="finestra-corpo">
+      <label class="scelta">
+        <input type="checkbox" id="imp-ricorda" checked>
+        <span>Ricorda partenza, cambi e ore su questo dispositivo</span>
+      </label>
+      <label class="scelta">
+        <input type="checkbox" id="imp-linee" checked>
+        <span>Mostra le linee di tutta la rete</span>
+      </label>
+    </div>
+  </dialog>
 
   <dialog id="aiuto" class="finestra" aria-labelledby="aiuto-titolo">
     <div class="finestra-testata">
@@ -40,15 +90,17 @@
       <button type="button" class="chiudi" data-chiudi aria-label="Chiudi">✕</button>
     </div>
     <div class="finestra-corpo">
-      <p>La mappa mostra la rete dei <strong>treni regionali</strong>: ogni pallino è una stazione,
-        ogni linea collega due fermate consecutive di almeno un treno.</p>
-      <p>Tocca o passa sopra un pallino per leggere il nome della stazione.
-        Trascina per spostarti, usa due dita o la rotella per lo zoom.</p>
-      <p>Presto: scegli una stazione di partenza e vedi dove arrivi, colorato per tempo di viaggio.</p>
+      <h3>Come si usa</h3>
+      <p><strong>1. Scegli la partenza:</strong> tocca una stazione sulla mappa oppure scrivine il nome nella casella in alto.</p>
+      <p><strong>2. Imposta i limiti:</strong> quanti cambi al massimo e quante ore al massimo di viaggio.</p>
+      <p><strong>3. Guarda dove arrivi:</strong> le stazioni si colorano in verde (meno di 1 ora), giallo (1–2 ore)
+        o rosso (oltre 2 ore). Quelle spente non si raggiungono con quei limiti.</p>
+      <p><strong>4. Tocca una meta</strong> per vedere i treni da prendere, dove cambiare e fin dove prosegue
+        l'ultimo treno (linea tratteggiata). "Verifica prezzo" apre il sito Trenitalia.</p>
       <h3>Come sono calcolati i tempi</h3>
       <p>Si conta solo il tempo passato sui treni, senza le attese ai cambi.
-        Per ogni tratta si usa il regionale più veloce di un giorno feriale tipo.
-        Niente Frecce, Intercity o Italo.</p>
+        Per ogni tratta si usa il regionale più veloce di alcuni mercoledì feriali.
+        Il ritorno si considera uguale all'andata. Niente Frecce, Intercity o Italo.</p>
     </div>
   </dialog>
 
@@ -73,6 +125,7 @@
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="versione.js"></script>
   <script src="rete.js"></script>
+  <script src="percorsi.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,9 +1,29 @@
-// Interfaccia: mappa, stati vuoti, finestre Aiuto e Informazioni.
+// Interfaccia: mappa, partenza, cursori, mete colorate, scheda del percorso, finestre.
 
 const URL_RETE = "data/rete.json";
 const URL_NOVITA = "CHANGELOG.md";
+const URL_TRENITALIA = "https://www.lefrecce.it/Channels.Website.WEB/";
+const CHIAVE_MEMORIA = "dove_arrivo_stato";
 const CENTRO_INIZIALE = [45.05, 7.9];
 const ZOOM_INIZIALE = 8;
+
+const stato = {
+  rete: null,
+  indice: null,
+  perId: new Map(),
+  origine: null,
+  meta: null,
+  mete: new Map(),
+  maxCambi: 1,
+  maxOre: 2,
+  imp: { ricorda: true, linee: true },
+};
+let mappa = null;
+const pallini = new Map();
+let stratoLinee = null;
+let stratoPercorso = null;
+
+// ---------------------------------------------------------------- funzioni pure
 
 function escapeHtml(testo) {
   return String(testo).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -41,6 +61,36 @@ function raggioStazione(zoom) {
   return zoom >= 12 ? 6 : zoom >= 10 ? 4.5 : 3.5;
 }
 
+function testoCambi(n) {
+  return n === 0 ? "diretto" : n === 1 ? "1 cambio" : `${n} cambi`;
+}
+
+// ---------------------------------------------------------------- memoria locale
+
+function leggiMemoria() {
+  try {
+    return JSON.parse(localStorage.getItem(CHIAVE_MEMORIA)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function salvaMemoria() {
+  const dati = { imp: stato.imp };
+  if (stato.imp.ricorda) Object.assign(dati, { origine: stato.origine, maxCambi: stato.maxCambi, maxOre: stato.maxOre });
+  try {
+    localStorage.setItem(CHIAVE_MEMORIA, JSON.stringify(dati));
+  } catch (e) {
+    // memoria non disponibile (navigazione privata): si continua senza
+  }
+}
+
+// ---------------------------------------------------------------- mappa
+
+function colore(nome) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
 function mostraStato(titolo, testo) {
   document.getElementById("stato-titolo").textContent = titolo;
   document.getElementById("stato-testo").textContent = testo;
@@ -48,7 +98,7 @@ function mostraStato(titolo, testo) {
 }
 
 function creaMappa() {
-  const mappa = L.map("mappa", { preferCanvas: true, zoomSnap: 0.5 }).setView(CENTRO_INIZIALE, ZOOM_INIZIALE);
+  mappa = L.map("mappa", { zoomSnap: 0.5 }).setView(CENTRO_INIZIALE, ZOOM_INIZIALE);
   // Tile OpenStreetMap (libere, senza chiave), scurite via CSS in .mappa-scura (style.css).
   // CARTO dark dal 2026 chiede una chiave API.
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -56,42 +106,327 @@ function creaMappa() {
     className: "mappa-scura",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(mappa);
-  return mappa;
+  // Livelli separati: linee della rete sotto, percorso evidenziato in mezzo, stazioni sopra.
+  [["linee", 410], ["percorso", 420], ["stazioni", 430]].forEach(([nome, z]) => {
+    mappa.createPane(nome).style.zIndex = z;
+  });
 }
 
-function disegnaRete(mappa, rete) {
-  const stile = getComputedStyle(document.documentElement);
-  const colore = (nome) => stile.getPropertyValue(nome).trim();
-  const perId = new Map(rete.stazioni.map((s) => [s.id, s]));
+function coordinate(id) {
+  const s = stato.perId.get(id);
+  return [s.lat, s.lon];
+}
 
-  const linee = segmentiUnici(rete).map(([a, b]) => [
-    [perId.get(a).lat, perId.get(a).lon],
-    [perId.get(b).lat, perId.get(b).lon],
-  ]);
-  L.polyline(linee, { color: colore("--linea"), weight: 1.6, opacity: 0.75, interactive: false }).addTo(mappa);
+function disegnaRete() {
+  const rete = stato.rete;
+  stratoLinee = L.polyline(segmentiUnici(rete).map(([a, b]) => [coordinate(a), coordinate(b)]), {
+    pane: "linee",
+    renderer: L.canvas({ pane: "linee" }),
+    color: colore("--linea"),
+    weight: 1.6,
+    opacity: 0.6,
+    interactive: false,
+  });
+  if (stato.imp.linee) stratoLinee.addTo(mappa);
+  stratoPercorso = L.layerGroup().addTo(mappa);
 
-  const pallini = rete.stazioni.map((s) => {
-    const dentro = s.regione === rete.meta.perimetro;
-    const pallino = L.circleMarker([s.lat, s.lon], {
-      radius: raggioStazione(mappa.getZoom()),
-      color: colore("--sfondo"),
-      weight: 1,
-      fillColor: colore(dentro ? "--stazione" : "--stazione-fuori"),
-      fillOpacity: 1,
-    });
+  const renderer = L.canvas({ pane: "stazioni", tolerance: 6 });
+  for (const s of rete.stazioni) {
+    const pallino = L.circleMarker([s.lat, s.lon], { pane: "stazioni", renderer, weight: 1, fillOpacity: 1 });
     pallino.bindTooltip(escapeHtml(s.nome), { className: "nome-stazione", direction: "top", offset: [0, -6] });
-    pallino.on("click", () => pallino.openTooltip());
-    return pallino.addTo(mappa);
-  });
-  mappa.on("zoomend", () => {
-    const r = raggioStazione(mappa.getZoom());
-    pallini.forEach((p) => p.setRadius(r));
-  });
-
+    pallino.on("click", () => tocca(s.id));
+    pallini.set(s.id, pallino.addTo(mappa));
+  }
+  mappa.on("zoomend", colora);
   if (rete.stazioni.length) {
     mappa.fitBounds(L.latLngBounds(rete.stazioni.map((s) => [s.lat, s.lon])), { padding: [20, 20] });
   }
 }
+
+function colora() {
+  const r = raggioStazione(mappa.getZoom());
+  const sfondo = colore("--sfondo");
+  for (const [id, pallino] of pallini) {
+    const s = stato.perId.get(id);
+    let stile;
+    if (id === stato.origine) {
+      stile = { radius: r + 3, color: "#ffffff", weight: 2, fillColor: colore("--origine") };
+    } else if (!stato.origine) {
+      const dentro = s.regione === stato.rete.meta.perimetro;
+      stile = { radius: r, color: sfondo, weight: 1, fillColor: colore(dentro ? "--stazione" : "--stazione-fuori") };
+    } else if (stato.mete.has(id)) {
+      const fascia_ = fascia(stato.mete.get(id).minuti);
+      stile = { radius: r, color: sfondo, weight: 1, fillColor: colore(`--${fascia_}`) };
+    } else {
+      stile = { radius: Math.max(r - 1, 2.5), color: sfondo, weight: 1, fillColor: colore("--spento") };
+    }
+    if (id === stato.meta) Object.assign(stile, { radius: r + 3, color: "#ffffff", weight: 2 });
+    pallino.setStyle(stile);
+  }
+  if (stato.meta) pallini.get(stato.meta).bringToFront();
+  if (stato.origine) pallini.get(stato.origine).bringToFront();
+}
+
+function disegnaPercorso(etichetta) {
+  stratoPercorso.clearLayers();
+  if (!etichetta) return;
+  const rete = stato.rete;
+  const renderer = L.canvas({ pane: "percorso" });
+  const opzioni = { pane: "percorso", renderer, interactive: false };
+  const tratti = etichetta.tratte.map((t) => fermateTratta(rete, t).map(coordinate));
+  const ultima = etichetta.tratte[etichetta.tratte.length - 1];
+  const resto = [rete.treni[ultima.treno].fermate[ultima.a].stazione, ...restoTratta(rete, ultima)];
+  if (resto.length > 1) {
+    L.polyline(resto.map(coordinate), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
+  }
+  L.polyline(tratti, { ...opzioni, color: colore("--sfondo"), weight: 8, opacity: 0.7 }).addTo(stratoPercorso);
+  L.polyline(tratti, { ...opzioni, color: colore("--percorso"), weight: 4 }).addTo(stratoPercorso);
+  inquadra(L.latLngBounds(tratti.flat()));
+}
+
+// Porta il percorso in vista se esce dalla parte di mappa non coperta dalla scheda
+// (in basso su telefono, a destra su schermi larghi).
+function inquadra(limiti) {
+  const scheda = document.getElementById("scheda");
+  const largo = window.matchMedia("(min-width: 760px)").matches;
+  const margineBasso = largo ? 30 : scheda.offsetHeight + 30;
+  const margineDestro = largo ? scheda.offsetWidth + 30 : 30;
+  const dimensioni = mappa.getSize();
+  const visibile = L.latLngBounds(
+    mappa.containerPointToLatLng([30, 50]),
+    mappa.containerPointToLatLng([dimensioni.x - margineDestro, dimensioni.y - margineBasso])
+  );
+  if (visibile.contains(limiti)) return;
+  mappa.fitBounds(limiti, {
+    paddingTopLeft: [30, 50],
+    paddingBottomRight: [margineDestro, margineBasso],
+    maxZoom: Math.max(mappa.getZoom(), 9),
+  });
+}
+
+// ---------------------------------------------------------------- stato e calcolo
+
+function ricalcola() {
+  stato.mete = stato.origine
+    ? calcolaMete(stato.indice, stato.origine, stato.maxCambi, stato.maxOre * 60)
+    : new Map();
+  colora();
+  aggiornaSuggerimento();
+  if (stato.meta) mostraScheda(stato.meta);
+  salvaMemoria();
+}
+
+function aggiornaSuggerimento() {
+  const box = document.getElementById("suggerimento");
+  if (!stato.origine) {
+    box.textContent = "Tocca una stazione o cercala in alto per scegliere la partenza";
+  } else if (!stato.mete.size) {
+    box.textContent = "Nessuna meta raggiungibile con questi limiti: prova ad aumentare cambi o ore";
+  } else {
+    const n = stato.mete.size;
+    box.textContent = `${n} ${n === 1 ? "meta raggiungibile" : "mete raggiungibili"} · tocca una meta per il percorso`;
+  }
+  box.hidden = false;
+}
+
+function impostaOrigine(id) {
+  stato.origine = id;
+  stato.meta = null;
+  chiudiScheda();
+  aggiornaRicerca();
+  ricalcola();
+}
+
+function togliOrigine() {
+  impostaOrigine(null);
+}
+
+function tocca(id) {
+  if (!stato.origine) {
+    impostaOrigine(id);
+  } else if (id === stato.origine) {
+    chiudiScheda();
+  } else {
+    mostraScheda(id);
+  }
+}
+
+// ---------------------------------------------------------------- scheda della meta
+
+function mostraScheda(id) {
+  stato.meta = id;
+  const rete = stato.rete;
+  const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
+  const etichetta = stato.mete.get(id);
+  document.getElementById("scheda-titolo").textContent = stato.perId.get(id).nome;
+  const corpo = document.getElementById("scheda-corpo");
+  const partiDaQui = `<button type="button" class="bottone" data-azione="parti">Parti da qui</button>`;
+
+  if (!etichetta) {
+    const cambi = stato.maxCambi === 0 ? "senza cambi" : `con al massimo ${testoCambi(stato.maxCambi)}`;
+    corpo.innerHTML =
+      `<p class="totale">Non raggiungibile da ${nome(stato.origine)} ${cambi} ` +
+      `e ${formattaDurata(stato.maxOre * 60)} di treno.</p>` +
+      `<div class="azioni">${partiDaQui}</div>`;
+  } else {
+    const righe = [];
+    etichetta.tratte.forEach((t, k) => {
+      const treno = rete.treni[t.treno];
+      const fermate = treno.fermate;
+      if (k > 0) righe.push(`<li class="cambio"><span aria-hidden="true">⇄</span> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
+      righe.push(
+        `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
+          `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
+          `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span></li>`
+      );
+    });
+    const ultima = etichetta.tratte[etichetta.tratte.length - 1];
+    const resto = restoTratta(rete, ultima);
+    const prosegue = resto.length
+      ? `<p class="prosegue">Il treno prosegue per ${nome(resto[resto.length - 1])}` +
+        (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "") + `</p>`
+      : `<p class="prosegue">Il treno termina qui</p>`;
+    corpo.innerHTML =
+      `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
+      `<ol class="tratte">${righe.join("")}</ol>` +
+      prosegue +
+      `<div class="azioni">` +
+      `<a class="bottone primario" href="${URL_TRENITALIA}" target="_blank" rel="noopener">Verifica prezzo</a>` +
+      partiDaQui +
+      `</div>` +
+      `<p class="nota">Su Trenitalia cerca da <strong>${nome(stato.origine)}</strong> a <strong>${nome(id)}</strong>. ` +
+      `Il tempo conta solo i minuti sui treni, senza le attese ai cambi.</p>`;
+  }
+  corpo.querySelector('[data-azione="parti"]').addEventListener("click", () => impostaOrigine(id));
+  document.getElementById("scheda").hidden = false;
+  colora();
+  disegnaPercorso(etichetta);
+}
+
+function chiudiScheda() {
+  stato.meta = null;
+  document.getElementById("scheda").hidden = true;
+  if (stratoPercorso) stratoPercorso.clearLayers();
+  if (mappa) colora();
+}
+
+// ---------------------------------------------------------------- ricerca della partenza
+
+function aggiornaRicerca() {
+  const campo = document.getElementById("cerca");
+  campo.value = stato.origine ? stato.perId.get(stato.origine).nome : "";
+  document.getElementById("togli-partenza").hidden = !stato.origine;
+}
+
+function preparaRicerca() {
+  const campo = document.getElementById("cerca");
+  const lista = document.getElementById("risultati");
+  let trovate = [];
+  let attiva = 0;
+
+  const chiudi = () => {
+    lista.hidden = true;
+    campo.setAttribute("aria-expanded", "false");
+    campo.removeAttribute("aria-activedescendant");
+  };
+  const disegna = () => {
+    lista.innerHTML = trovate.length
+      ? trovate
+          .map((s, i) => {
+            const regione = s.regione !== stato.rete.meta.perimetro ? `<span class="regione">${escapeHtml(s.regione)}</span>` : "";
+            return `<li id="risultato-${i}" role="option" aria-selected="${i === attiva}" data-id="${escapeHtml(s.id)}">${escapeHtml(s.nome)}${regione}</li>`;
+          })
+          .join("")
+      : `<li role="option" aria-disabled="true">Nessuna stazione con questo nome</li>`;
+    lista.hidden = false;
+    campo.setAttribute("aria-expanded", "true");
+    if (trovate.length) campo.setAttribute("aria-activedescendant", `risultato-${attiva}`);
+  };
+  const scegli = (id) => {
+    chiudi();
+    campo.blur();
+    impostaOrigine(id);
+    const punto = L.latLng(coordinate(id));
+    if (!mappa.getBounds().contains(punto)) mappa.panTo(punto);
+  };
+
+  campo.addEventListener("focus", () => campo.select());
+  campo.addEventListener("input", () => {
+    trovate = cercaStazioni(stato.rete.stazioni, campo.value);
+    attiva = 0;
+    campo.value.trim() ? disegna() : chiudi();
+  });
+  campo.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!trovate.length) return;
+      e.preventDefault();
+      attiva = (attiva + (e.key === "ArrowDown" ? 1 : trovate.length - 1)) % trovate.length;
+      disegna();
+    } else if (e.key === "Enter") {
+      if (trovate.length && !lista.hidden) scegli(trovate[attiva].id);
+    } else if (e.key === "Escape") {
+      chiudi();
+      aggiornaRicerca();
+      campo.blur();
+    }
+  });
+  // mousedown (non click): arriva prima che il campo perda il fuoco e chiuda la lista
+  lista.addEventListener("mousedown", (e) => {
+    const voce = e.target.closest("li[data-id]");
+    if (!voce) return;
+    e.preventDefault();
+    scegli(voce.dataset.id);
+  });
+  campo.addEventListener("blur", () => {
+    setTimeout(() => {
+      chiudi();
+      aggiornaRicerca();
+    }, 150);
+  });
+  document.getElementById("togli-partenza").addEventListener("click", togliOrigine);
+}
+
+// ---------------------------------------------------------------- cursori e impostazioni
+
+function preparaCursori() {
+  const cambi = document.getElementById("cambi");
+  const ore = document.getElementById("ore");
+  const mostra = () => {
+    document.getElementById("val-cambi").textContent = stato.maxCambi;
+    document.getElementById("val-ore").textContent = formattaDurata(stato.maxOre * 60);
+  };
+  cambi.value = stato.maxCambi;
+  ore.value = stato.maxOre;
+  mostra();
+  cambi.addEventListener("input", () => {
+    stato.maxCambi = Number(cambi.value);
+    mostra();
+    ricalcola();
+  });
+  ore.addEventListener("input", () => {
+    stato.maxOre = Number(ore.value);
+    mostra();
+    ricalcola();
+  });
+}
+
+function preparaImpostazioni() {
+  const ricorda = document.getElementById("imp-ricorda");
+  const linee = document.getElementById("imp-linee");
+  ricorda.checked = stato.imp.ricorda;
+  linee.checked = stato.imp.linee;
+  ricorda.addEventListener("change", () => {
+    stato.imp.ricorda = ricorda.checked;
+    salvaMemoria();
+  });
+  linee.addEventListener("change", () => {
+    stato.imp.linee = linee.checked;
+    if (stratoLinee) linee.checked ? stratoLinee.addTo(mappa) : stratoLinee.remove();
+    salvaMemoria();
+  });
+}
+
+// ---------------------------------------------------------------- finestre
 
 let novitaCaricate = false;
 
@@ -120,6 +455,10 @@ function preparaFinestre() {
     // clic fuori dalla finestra = chiudi
     finestra.addEventListener("click", (e) => { if (e.target === finestra) finestra.close(); });
   });
+  document.getElementById("chiudi-scheda").addEventListener("click", chiudiScheda);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.querySelector("dialog[open]") && !document.getElementById("scheda").hidden) chiudiScheda();
+  });
 }
 
 function compilaInformazioni(rete) {
@@ -133,11 +472,19 @@ function compilaInformazioni(rete) {
   document.getElementById("info-fonti").textContent = m.fonte || "—";
 }
 
+// ---------------------------------------------------------------- avvio
+
 async function avvia() {
   document.getElementById("versione").textContent = VERSIONE;
   const dataDati = document.getElementById("data-dati");
-  let rete = null;
+  const memoria = leggiMemoria();
+  Object.assign(stato.imp, memoria.imp || {});
+  if (stato.imp.ricorda) {
+    if ([0, 1, 2, 3].includes(memoria.maxCambi)) stato.maxCambi = memoria.maxCambi;
+    if (typeof memoria.maxOre === "number" && memoria.maxOre >= 0.5 && memoria.maxOre <= 6) stato.maxOre = memoria.maxOre;
+  }
   preparaFinestre();
+  preparaImpostazioni();
 
   if (typeof L === "undefined") {
     dataDati.textContent = "";
@@ -145,8 +492,9 @@ async function avvia() {
     compilaInformazioni(null);
     return;
   }
-  const mappa = creaMappa();
+  creaMappa();
 
+  let rete;
   try {
     rete = await caricaRete(URL_RETE);
   } catch (errore) {
@@ -162,10 +510,16 @@ async function avvia() {
     mostraStato("Rete vuota", "il file dati non contiene stazioni. Rigeneralo con Aggiorna_Dati.bat.");
     return;
   }
-  disegnaRete(mappa, rete);
-  const conteggi = document.getElementById("conteggi");
-  conteggi.textContent = `${rete.meta.conteggi.stazioni} stazioni · ${rete.meta.conteggi.treni} treni`;
-  conteggi.hidden = false;
+  stato.rete = rete;
+  stato.indice = creaIndice(rete);
+  stato.perId = new Map(rete.stazioni.map((s) => [s.id, s]));
+  if (stato.imp.ricorda && stato.perId.has(memoria.origine)) stato.origine = memoria.origine;
+
+  disegnaRete();
+  preparaRicerca();
+  preparaCursori();
+  aggiornaRicerca();
+  ricalcola();
 }
 
 if (typeof document !== "undefined") {
@@ -173,5 +527,5 @@ if (typeof document !== "undefined") {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { changelogInHtml, escapeHtml, raggioStazione };
+  module.exports = { changelogInHtml, escapeHtml, raggioStazione, testoCambi };
 }
