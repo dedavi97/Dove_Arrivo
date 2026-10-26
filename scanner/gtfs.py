@@ -65,31 +65,51 @@ def validita(archivio):
     return _data(info["feed_start_date"]), _data(info["feed_end_date"])
 
 
-def scegli_giorno_tipo(oggi, inizio, fine):
-    """Primo mercoledì da una settimana in poi, dentro la validità, non festivo e fuori dalle feste natalizie."""
-    giorno = max(oggi + datetime.timedelta(days=7), inizio)
+def _primo_mercoledi_feriale(da, fine):
+    """Primo mercoledì da `da` in poi, entro `fine`, non festivo e fuori dalle feste natalizie."""
+    giorno = da
     while giorno <= fine:
         natale = (giorno.month == 12 and giorno.day >= 20) or (giorno.month == 1 and giorno.day <= 7)
         if giorno.weekday() == 2 and (giorno.month, giorno.day) not in FESTIVI and not natale:
             return giorno
         giorno += datetime.timedelta(days=1)
-    raise ValueError(f"nessun mercoledì feriale valido tra {inizio} e {fine}")
+    return None
 
 
-def servizi_attivi(archivio, giorno):
-    testo = giorno.strftime("%Y%m%d")
-    colonna = GIORNI[giorno.weekday()]
-    attivi = {
-        c["service_id"] for c in _righe(archivio, "calendar.txt")
-        if c[colonna] == "1" and c["start_date"] <= testo <= c["end_date"]
-    }
+def scegli_giorni_tipo(oggi, inizio, fine, quanti=4, settimane_tra_giorni=3):
+    """Alcuni mercoledì feriali distribuiti nel tempo, dal primo tra una settimana in poi.
+
+    Un solo giorno può cadere durante lavori sulla linea (es. Torino-Asti il 04/11/2026
+    servita solo da autobus): unendo più giorni l'interruzione non fa sparire la linea.
+    """
+    giorni = []
+    da = max(oggi + datetime.timedelta(days=7), inizio)
+    while len(giorni) < quanti:
+        giorno = _primo_mercoledi_feriale(da, fine)
+        if giorno is None:
+            break
+        giorni.append(giorno)
+        da = giorno + datetime.timedelta(weeks=settimane_tra_giorni)
+    if not giorni:
+        raise ValueError(f"nessun mercoledì feriale valido tra {inizio} e {fine}")
+    return giorni
+
+
+def servizi_attivi(archivio, giorni):
+    """Servizi attivi in almeno uno dei giorni."""
+    testi = {g.strftime("%Y%m%d"): GIORNI[g.weekday()] for g in giorni}
+    attivi = {testo: set() for testo in testi}
+    for c in _righe(archivio, "calendar.txt"):
+        for testo, colonna in testi.items():
+            if c[colonna] == "1" and c["start_date"] <= testo <= c["end_date"]:
+                attivi[testo].add(c["service_id"])
     for d in _righe(archivio, "calendar_dates.txt"):
-        if d["date"] == testo:
+        if d["date"] in attivi:
             if d["exception_type"] == "1":
-                attivi.add(d["service_id"])
+                attivi[d["date"]].add(d["service_id"])
             else:
-                attivi.discard(d["service_id"])
-    return attivi
+                attivi[d["date"]].discard(d["service_id"])
+    return set().union(*attivi.values())
 
 
 def leggi_stazioni(archivio):
@@ -106,10 +126,10 @@ def leggi_stazioni(archivio):
     return stazioni, da_fermata
 
 
-def leggi_corse(archivio, giorno, categorie, avanzamento=None):
-    """Corse attive nel giorno, delle sole categorie volute. Restituisce (corse, stazioni, avvisi)."""
+def leggi_corse(archivio, giorni, categorie, avanzamento=None):
+    """Corse attive in almeno uno dei giorni, delle sole categorie volute. Restituisce (corse, stazioni, avvisi)."""
     categoria_di = {r["route_id"]: r["route_short_name"].split("_")[-1] for r in _righe(archivio, "routes.txt")}
-    attivi = servizi_attivi(archivio, giorno)
+    attivi = servizi_attivi(archivio, giorni)
     viaggi = {}
     for t in _righe(archivio, "trips.txt"):
         categoria = categoria_di.get(t["route_id"])

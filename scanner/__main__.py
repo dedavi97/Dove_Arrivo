@@ -71,8 +71,9 @@ def stampa_riepilogo(nuova, diff, avvisi):
     print("RIEPILOGO")
     print("=" * 60)
     print(f"  Perimetro:          {m['perimetro']} (con i treni fino al capolinea)")
-    print(f"  Giorno tipo usato:  {datetime.date.fromisoformat(m['giorno_tipo']):%d/%m/%Y}")
-    print(f"  Corse regionali:    {m['corse_considerate']} quel giorno")
+    giorni = ", ".join(f"{datetime.date.fromisoformat(g):%d/%m}" for g in m["giorni_tipo"])
+    print(f"  Giorni tipo usati:  mercoledì {giorni}")
+    print(f"  Corse regionali:    {m['corse_considerate']} in quei giorni")
     print(f"  Treni nella rete:   {m['conteggi']['treni']} (le corse ripetute sono ridotte alla più veloce)")
     print(f"  Stazioni:           {m['conteggi']['stazioni']}")
 
@@ -101,19 +102,20 @@ def esegui(solo_scansione):
     archivio = gtfs.apri(prepara_orario(avvisi))
     elenco_regioni = prepara_regioni()
 
-    fase(4, "Lettura delle corse regionali del giorno tipo")
+    fase(4, "Lettura delle corse regionali dei giorni tipo")
     inizio, fine = gtfs.validita(archivio)
-    giorno = gtfs.scegli_giorno_tipo(oggi, inizio, fine)
-    print(f"    orario valido dal {inizio:%d/%m/%Y} al {fine:%d/%m/%Y}; giorno tipo: mercoledì {giorno:%d/%m/%Y}")
-    corse, stazioni, avvisi_lettura = gtfs.leggi_corse(archivio, giorno, CATEGORIE_REGIONALI, barra)
+    giorni = gtfs.scegli_giorni_tipo(oggi, inizio, fine)
+    print(f"    orario valido dal {inizio:%d/%m/%Y} al {fine:%d/%m/%Y}")
+    print(f"    giorni tipo: mercoledì {', '.join(f'{g:%d/%m/%Y}' for g in giorni)}")
+    corse, stazioni, avvisi_lettura = gtfs.leggi_corse(archivio, giorni, CATEGORIE_REGIONALI, barra)
     avvisi += avvisi_lettura
-    print(f"    {len(corse)} corse regionali in tutta Italia quel giorno")
+    print(f"    {len(corse)} corse regionali in tutta Italia in quei giorni")
 
     fase(5, f"Costruzione della rete ({PERIMETRO}) e confronto con la precedente")
     nuova = costruisci.costruisci_rete(
         corse, stazioni,
         lambda s: regioni.regione_di(s.lat, s.lon, s.id, elenco_regioni),
-        PERIMETRO, oggi, giorno, FONTE,
+        PERIMETRO, oggi, giorni, FONTE,
     )
     try:
         vecchia = rete.leggi_rete(FILE_DATI)

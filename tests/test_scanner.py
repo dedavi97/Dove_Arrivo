@@ -78,11 +78,16 @@ def test_validita(archivio):
 
 
 def test_servizi_attivi_con_eccezioni(archivio):
-    assert gtfs.servizi_attivi(archivio, MERCOLEDI) == {"feriale", "festivo"}
+    assert gtfs.servizi_attivi(archivio, [MERCOLEDI]) == {"feriale", "festivo"}
+
+
+def test_servizi_attivi_unione_di_piu_giorni(archivio):
+    # il 04/11 "soppresso" non circola, l'11/11 sì: l'unione lo include
+    assert gtfs.servizi_attivi(archivio, [MERCOLEDI, datetime.date(2026, 11, 11)]) == {"feriale", "festivo", "soppresso"}
 
 
 def test_leggi_corse(archivio):
-    corse, stazioni, avvisi = gtfs.leggi_corse(archivio, MERCOLEDI, {"REG"})
+    corse, stazioni, avvisi = gtfs.leggi_corse(archivio, [MERCOLEDI], {"REG"})
     per_numero = {c.numero: c for c in corse}
     assert set(per_numero) == {"100", "200"}  # 300 soppresso, 9000 Freccia, BUS1 autobus, 400 scartato
     # dopo mezzanotte (24:xx) e con l'arrivo come riferimento
@@ -93,22 +98,31 @@ def test_leggi_corse(archivio):
 
 def test_avanzamento_arriva_al_cento(archivio):
     valori = []
-    gtfs.leggi_corse(archivio, MERCOLEDI, {"REG"}, valori.append)
+    gtfs.leggi_corse(archivio, [MERCOLEDI], {"REG"}, valori.append)
     assert valori and valori[-1] == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize("oggi, atteso", [
-    (datetime.date(2026, 10, 26), datetime.date(2026, 11, 4)),   # almeno una settimana dopo
-    (datetime.date(2027, 11, 28), datetime.date(2027, 12, 15)),  # mercoledì 8/12/2027 è festivo
-    (datetime.date(2026, 12, 15), datetime.date(2027, 1, 13)),   # salta le feste natalizie
+def _d(testo):
+    return datetime.date.fromisoformat(testo)
+
+
+@pytest.mark.parametrize("oggi, attesi", [
+    # almeno una settimana dopo, poi ogni 3 settimane
+    ("2026-10-26", ["2026-11-04", "2026-11-25", "2026-12-16", "2027-01-13"]),  # salta le feste natalizie
+    ("2027-11-14", ["2027-11-24", "2027-12-15", "2028-01-12", "2028-02-02"]),  # salta l'8/12 (mercoledì festivo)
 ])
-def test_scegli_giorno_tipo(oggi, atteso):
-    assert gtfs.scegli_giorno_tipo(oggi, datetime.date(2026, 10, 24), datetime.date(2028, 6, 30)) == atteso
+def test_scegli_giorni_tipo(oggi, attesi):
+    giorni = gtfs.scegli_giorni_tipo(_d(oggi), _d("2026-10-24"), _d("2028-06-30"))
+    assert giorni == [_d(g) for g in attesi]
 
 
-def test_scegli_giorno_tipo_fuori_validita():
+def test_scegli_giorni_tipo_a_fine_validita():
+    assert gtfs.scegli_giorni_tipo(_d("2026-10-26"), _d("2026-10-24"), _d("2026-11-30")) == [_d("2026-11-04"), _d("2026-11-25")]
+
+
+def test_scegli_giorni_tipo_fuori_validita():
     with pytest.raises(ValueError):
-        gtfs.scegli_giorno_tipo(datetime.date(2026, 10, 26), datetime.date(2026, 10, 1), datetime.date(2026, 10, 30))
+        gtfs.scegli_giorni_tipo(_d("2026-10-26"), _d("2026-10-01"), _d("2026-10-30"))
 
 
 # --- nomi e riduzione corse ---------------------------------------------------
@@ -147,7 +161,7 @@ def test_costruisci_rete_perimetro():
     ]
     r = costruisci.costruisci_rete(
         corse, stazioni, lambda s: regione[s.id], "Piemonte",
-        datetime.date(2026, 10, 26), MERCOLEDI, "test",
+        datetime.date(2026, 10, 26), [MERCOLEDI], "test",
     )
     assert [t["numero"] for t in r["treni"]] == ["1"]
     assert [s["nome"] for s in r["stazioni"]] == ["Milano", "Torino"]

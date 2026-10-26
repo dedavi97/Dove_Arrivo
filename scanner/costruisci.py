@@ -38,7 +38,7 @@ def _numero(corsa):
     return int(corsa.numero) if corsa.numero.isdigit() else float("inf")
 
 
-def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorno_tipo, fonte):
+def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte):
     """regione_di(stazione) -> nome regione."""
     regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
     nel_perimetro = [c for c in corse if any(regioni[s] == perimetro for s, _ in c.fermate)]
@@ -52,7 +52,7 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
             "data_aggiornamento": data_aggiornamento.isoformat(),
             "perimetro": perimetro,
             "conteggi": {"stazioni": len(usate), "treni": len(scelte)},
-            "giorno_tipo": giorno_tipo.isoformat(),
+            "giorni_tipo": [g.isoformat() for g in giorni_tipo],
             "corse_considerate": len(nel_perimetro),
             "fonte": fonte,
         },

@@ -129,7 +129,7 @@ function compilaInformazioni(rete) {
   document.getElementById("info-dati").textContent =
     `aggiornati il ${formattaData(m.data_aggiornamento)} · ${m.perimetro} · ` +
     `${m.conteggi.stazioni} stazioni, ${m.conteggi.treni} treni` +
-    (m.giorno_tipo ? ` · giorno tipo ${formattaData(m.giorno_tipo)}` : "");
+    (m.giorni_tipo ? ` · orari dei mercoledì ${m.giorni_tipo.map(formattaData).join(", ")}` : "");
   document.getElementById("info-fonti").textContent = m.fonte || "—";
 }
 

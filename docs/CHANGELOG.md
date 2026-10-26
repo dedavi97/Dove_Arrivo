@@ -3,6 +3,12 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.2.1 — 26/10/2026
+- I dati ora uniscono gli orari di 4 mercoledì distribuiti su due mesi e
+  mezzo, invece di uno solo: una linea chiusa per lavori in un giorno non
+  sparisce più dalla mappa. Tornate la Torino–Asti e la Cuneo–Limone.
+- Rete: 237 treni, 328 stazioni.
+
 ## 0.2.0 — 26/10/2026
 - Il sito: mappa scura con tutte le stazioni e le linee dei treni regionali.
   Tocca una stazione per leggerne il nome.

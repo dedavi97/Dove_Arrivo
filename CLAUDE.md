@@ -117,13 +117,16 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   nomi), `rete` (UNICO punto di lettura/scrittura di rete.json + confronto),
   `pubblica` (git add/commit --only/push del solo file dati).
 - Il GTFS si riscarica solo se `.last_publication_timestamp` è cambiato.
-- Giorno tipo: primo mercoledì da oggi+7 giorni, dentro la validità, non
-  festivo, fuori dal 20/12–07/01.
+- Giorni tipo (dalla 0.2.1): 4 mercoledì, il primo da oggi+7 giorni, poi
+  ogni 3 settimane; dentro la validità, non festivi, fuori dal 20/12–07/01.
+  Si uniscono le corse di tutti e 4 i giorni. Motivo: con un solo giorno
+  (04/11/2026) mancavano Torino–Asti e Cuneo–Limone, interrotte per lavori
+  quel giorno (solo BUS). Con 4 giorni: 1611 corse → 237 treni, 328 stazioni.
 - Minuti: partenza alla prima fermata, poi l'arrivo in ogni fermata
   (A→B = arrivo B − arrivo A, include la sosta in A). Corse con orari che
   tornano indietro: scartate e segnalate.
 - Riduzione: tra corse con identica sequenza di fermate si tiene la più
-  veloce (a parità il numero più basso). 869 corse → 214 treni, 317 stazioni.
+  veloce (a parità il numero più basso).
 - Perimetro: treni con almeno una fermata in Piemonte, presi interi fino al capolinea.
 - Regione: le stazioni con codice non `83…` sono "Estero". Fuori da tutti i
   poligoni: entro 1 km → regione più vicina (stazioni costiere, max 0,32 km),
@@ -131,7 +134,7 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   italiano: Tenda, Breil, La Brigue, Fontan, St-Dalmas, Vievola, ≥3,9 km).
 - Nomi: tutti maiuscoli nel GTFS → resi "Torino Porta Nuova", "Castello d'Annone".
 - rete.json: una stazione/un treno per riga (diff git leggibili). Campi extra
-  in meta: `giorno_tipo`, `corse_considerate`, `fonte` (attribuzioni CC-BY).
+  in meta: `giorni_tipo` (lista), `corse_considerate`, `fonte` (attribuzioni CC-BY).
 - Nov 2026: la Ivrea–Aosta è servita solo da BUS sostitutivi → Valle d'Aosta
   assente dalla rete (corretto, non è un errore).
 - Node 24: `node --test tests` NON funziona (lo prende come file):
@@ -151,7 +154,7 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
 - Le novità in "Informazioni" vengono da `docs/CHANGELOG.md`, **copia esatta**
   di `CHANGELOG.md` (GitHub Pages serve solo `docs/`). Un test verifica che
   siano identici: dopo ogni modifica del changelog `cp CHANGELOG.md docs/CHANGELOG.md`.
-- GitHub Pages: va configurato su branch `main`, cartella `/docs`
+- GitHub Pages: ATTIVO dal 26/10/2026 su branch `main`, cartella `/docs`
   (Settings → Pages). URL atteso: https://dedavi97.github.io/Dove_Arrivo/
 - Remote `origin` = https://github.com/dedavi97/Dove_Arrivo.git (aggiunto il
   26/10/2026, repo vuoto a quella data).
