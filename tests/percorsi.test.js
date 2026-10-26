@@ -137,3 +137,8 @@ test("rete reale: Torino Porta Nuova → Asti diretto in meno di un'ora", () => 
     assert.ok(asti && asti.minuti < 60 && asti.tratte.length === 1, `con ${cambi} cambi`);
   }
 });
+
+test("stazioni di cambio", () => {
+  assert.deepStrictEqual(P.stazioniCambio(RETE, P.calcolaMete(indice, "A", 2, 600).get("G")), ["C", "F"]);
+  assert.deepStrictEqual(P.stazioniCambio(RETE, P.calcolaMete(indice, "A", 2, 600).get("B")), []);
+});

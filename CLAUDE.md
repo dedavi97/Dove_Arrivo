@@ -184,6 +184,10 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   ognuno con il suo renderer canvas.
 - Scheda della meta: in basso su telefono, a destra da 760 px. `inquadra()`
   sposta la mappa solo se il percorso esce dall'area non coperta dalla scheda.
+- Cambi (0.3.1): `stazioniCambio()` in percorsi.js; anelli viola (`--cambio`)
+  disegnati nel pane `stazioni` con lo stesso renderer dei pallini (sopra di
+  loro, non interattivi), voce "cambio" in legenda visibile solo se servono.
+  Prosecuzione tratteggiata e testo "prosegue per… / termina qui" per ogni tratta.
 - "Verifica prezzo": apre https://www.lefrecce.it/Channels.Website.WEB/ e la
   scheda dice cosa cercare (nessun link precompilato possibile).
 - Memoria locale (`localStorage`, chiave `dove_arrivo_stato`, sempre in

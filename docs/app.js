@@ -22,6 +22,8 @@ let mappa = null;
 const pallini = new Map();
 let stratoLinee = null;
 let stratoPercorso = null;
+let rendererStazioni = null;
+let anelliCambio = [];
 
 // ---------------------------------------------------------------- funzioni pure
 
@@ -130,9 +132,9 @@ function disegnaRete() {
   if (stato.imp.linee) stratoLinee.addTo(mappa);
   stratoPercorso = L.layerGroup().addTo(mappa);
 
-  const renderer = L.canvas({ pane: "stazioni", tolerance: 6 });
+  rendererStazioni = L.canvas({ pane: "stazioni", tolerance: 6 });
   for (const s of rete.stazioni) {
-    const pallino = L.circleMarker([s.lat, s.lon], { pane: "stazioni", renderer, weight: 1, fillOpacity: 1 });
+    const pallino = L.circleMarker([s.lat, s.lon], { pane: "stazioni", renderer: rendererStazioni, weight: 1, fillOpacity: 1 });
     pallino.bindTooltip(escapeHtml(s.nome), { className: "nome-stazione", direction: "top", offset: [0, -6] });
     pallino.on("click", () => tocca(s.id));
     pallini.set(s.id, pallino.addTo(mappa));
@@ -165,22 +167,37 @@ function colora() {
   }
   if (stato.meta) pallini.get(stato.meta).bringToFront();
   if (stato.origine) pallini.get(stato.origine).bringToFront();
+  anelliCambio.forEach((anello) => anello.setRadius(r + 5).bringToFront());
 }
 
 function disegnaPercorso(etichetta) {
   stratoPercorso.clearLayers();
+  anelliCambio = [];
+  document.getElementById("legenda-cambio").hidden = true;
   if (!etichetta) return;
   const rete = stato.rete;
   const renderer = L.canvas({ pane: "percorso" });
   const opzioni = { pane: "percorso", renderer, interactive: false };
   const tratti = etichetta.tratte.map((t) => fermateTratta(rete, t).map(coordinate));
-  const ultima = etichetta.tratte[etichetta.tratte.length - 1];
-  const resto = [rete.treni[ultima.treno].fermate[ultima.a].stazione, ...restoTratta(rete, ultima)];
-  if (resto.length > 1) {
-    L.polyline(resto.map(coordinate), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
+  // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia.
+  for (const t of etichetta.tratte) {
+    const resto = [rete.treni[t.treno].fermate[t.a].stazione, ...restoTratta(rete, t)];
+    if (resto.length > 1) {
+      L.polyline(resto.map(coordinate), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
+    }
   }
   L.polyline(tratti, { ...opzioni, color: colore("--sfondo"), weight: 8, opacity: 0.7 }).addTo(stratoPercorso);
   L.polyline(tratti, { ...opzioni, color: colore("--percorso"), weight: 4 }).addTo(stratoPercorso);
+  // Anelli sulle stazioni di cambio, sopra i pallini (stesso livello delle stazioni).
+  const r = raggioStazione(mappa.getZoom()) + 5;
+  for (const id of stazioniCambio(rete, etichetta)) {
+    const anello = L.circleMarker(coordinate(id), {
+      pane: "stazioni", renderer: rendererStazioni, interactive: false,
+      radius: r, color: colore("--cambio"), weight: 3, fill: false,
+    });
+    anelliCambio.push(anello.addTo(stratoPercorso));
+  }
+  document.getElementById("legenda-cambio").hidden = !anelliCambio.length;
   inquadra(L.latLngBounds(tratti.flat()));
 }
 
@@ -273,23 +290,22 @@ function mostraScheda(id) {
     etichetta.tratte.forEach((t, k) => {
       const treno = rete.treni[t.treno];
       const fermate = treno.fermate;
-      if (k > 0) righe.push(`<li class="cambio"><span aria-hidden="true">⇄</span> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
+      if (k > 0) righe.push(`<li class="cambio"><i class="anello" aria-hidden="true"></i> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
+      const resto = restoTratta(rete, t);
+      const prosegue = resto.length
+        ? `prosegue per ${nome(resto[resto.length - 1])}` +
+          (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "")
+        : "termina qui";
       righe.push(
         `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
           `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
-          `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span></li>`
+          `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span>` +
+          `<span class="prosegue">${prosegue}</span></li>`
       );
     });
-    const ultima = etichetta.tratte[etichetta.tratte.length - 1];
-    const resto = restoTratta(rete, ultima);
-    const prosegue = resto.length
-      ? `<p class="prosegue">Il treno prosegue per ${nome(resto[resto.length - 1])}` +
-        (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "") + `</p>`
-      : `<p class="prosegue">Il treno termina qui</p>`;
     corpo.innerHTML =
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
       `<ol class="tratte">${righe.join("")}</ol>` +
-      prosegue +
       `<div class="azioni">` +
       `<a class="bottone primario" href="${URL_TRENITALIA}" target="_blank" rel="noopener">Verifica prezzo</a>` +
       partiDaQui +
@@ -299,6 +315,7 @@ function mostraScheda(id) {
   }
   corpo.querySelector('[data-azione="parti"]').addEventListener("click", () => impostaOrigine(id));
   document.getElementById("scheda").hidden = false;
+  document.getElementById("suggerimento").hidden = true; // con la scheda aperta non serve e coprirebbe la mappa
   colora();
   disegnaPercorso(etichetta);
 }
@@ -306,8 +323,9 @@ function mostraScheda(id) {
 function chiudiScheda() {
   stato.meta = null;
   document.getElementById("scheda").hidden = true;
-  if (stratoPercorso) stratoPercorso.clearLayers();
+  if (stratoPercorso) disegnaPercorso(null);
   if (mappa) colora();
+  if (stato.rete) aggiornaSuggerimento();
 }
 
 // ---------------------------------------------------------------- ricerca della partenza

@@ -3,6 +3,12 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.3.1 — 26/10/2026
+- Per ogni treno del percorso, non solo l'ultimo, la scheda dice dove
+  prosegue (o se termina) e la mappa ne mostra la prosecuzione tratteggiata.
+- Le stazioni di cambio sono segnate sulla mappa con un anello viola, anche
+  in legenda.
+
 ## 0.3.0 — 26/10/2026
 - Scegli la stazione di partenza toccandola sulla mappa o cercandola per nome.
 - Cursori per i cambi massimi (0–3) e le ore massime di viaggio (da 30 min a 6 h).

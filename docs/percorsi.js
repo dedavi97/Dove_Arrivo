@@ -79,6 +79,11 @@ function fermateTratta(rete, tratta) {
   return rete.treni[tratta.treno].fermate.slice(tratta.da, tratta.a + 1).map((f) => f.stazione);
 }
 
+// Stazioni dove si cambia treno (id), in ordine di viaggio.
+function stazioniCambio(rete, etichetta) {
+  return etichetta.tratte.slice(1).map((t) => rete.treni[t.treno].fermate[t.da].stazione);
+}
+
 function minutiTratta(rete, tratta) {
   const f = rete.treni[tratta.treno].fermate;
   return f[tratta.a].minuti_dalla_partenza - f[tratta.da].minuti_dalla_partenza;
@@ -97,5 +102,5 @@ function formattaDurata(minuti) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { SOGLIA_CAMBIO_MINUTI, creaIndice, calcolaMete, restoTratta, fermateTratta, minutiTratta, fascia, formattaDurata };
+  module.exports = { SOGLIA_CAMBIO_MINUTI, creaIndice, calcolaMete, restoTratta, fermateTratta, stazioniCambio, minutiTratta, fascia, formattaDurata };
 }

@@ -1,6 +1,6 @@
 # Stato del progetto
 
-**Versione:** 0.3.0 — 26/10/2026
+**Versione:** 0.3.1 — 26/10/2026
 **Tappa conclusa:** 0.3.0 (partenza, cursori, mete, percorso)
 **Prossima tappa:** 0.4.0 — estensione a tutta Italia
 
@@ -10,7 +10,8 @@
   (0–3) e ore massime (30 min – 6 h). Le mete si colorano per tempo (verde,
   giallo, rosso), le altre si spengono; legenda sempre visibile.
 - Toccando una meta: treni, cambi, tempo totale, fin dove prosegue l'ultimo
-  treno; percorso evidenziato sulla mappa, prosecuzione tratteggiata;
+  treno usato; percorso evidenziato, prosecuzioni tratteggiate, cambi
+  segnati con un anello viola;
   "Verifica prezzo" apre Trenitalia, "Parti da qui" cambia partenza.
 - Impostazioni (ricorda partenza e limiti, mostra linee), Aiuto, Informazioni.
 - Provato in formato telefono e computer.

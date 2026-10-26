@@ -16,6 +16,7 @@
   --spento: #474d58;
   --percorso: #ffffff;
   --origine: #7cb7ff;
+  --cambio: #c49bff;
   --altezza-testata: 48px;
   --altezza-piede: 40px;
   color-scheme: dark;
@@ -257,11 +258,14 @@ body {
   color: var(--testo-tenue);
 }
 .legenda span { white-space: nowrap; }
+.legenda span[hidden] { display: none; }
 .punto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
 .punto.verde { background: var(--verde); }
 .punto.giallo { background: var(--giallo); }
 .punto.rosso { background: var(--rosso); }
 .punto.spento { background: var(--spento); }
+.anello { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--cambio); margin-right: 5px; vertical-align: -2px; box-sizing: border-box; }
+.cambio .anello { margin-right: 0; }
 
 /* --- scheda della meta: in basso su telefono, a destra su schermi larghi --- */
 .scheda {
@@ -324,9 +328,9 @@ body {
 }
 .da-a { min-width: 0; }
 .durata { color: var(--testo-tenue); font-size: 13px; white-space: nowrap; }
-.cambio { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--giallo); font-size: 13px; }
-.prosegue { margin: 12px 0 0; color: var(--testo-tenue); font-size: 13px; }
-.prosegue::before { content: "┄ "; color: var(--percorso); }
+.cambio { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--cambio); font-size: 13px; }
+.tratta .prosegue { grid-column: 1 / -1; color: var(--testo-tenue); font-size: 12px; }
+.tratta .prosegue::before { content: "┄ "; color: var(--percorso); }
 .nota { margin: 12px 0 0; color: var(--testo-tenue); font-size: 12px; }
 .azioni { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .bottone {
