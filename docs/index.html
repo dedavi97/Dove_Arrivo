@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e1014">
+  <meta name="description" content="Dove arrivo con i treni regionali: le mete raggiungibili da una stazione, colorate per tempo di viaggio.">
+  <title>Dove_Arrivo</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+        integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="testata">
+    <h1 class="marchio">Dove_Arrivo</h1>
+    <span id="data-dati" class="data-dati">Caricamento dati…</span>
+  </header>
+
+  <main class="contenuto">
+    <div id="mappa" class="mappa" role="region" aria-label="Mappa della rete dei treni regionali"></div>
+    <div id="conteggi" class="conteggi" hidden></div>
+    <section id="stato" class="stato" role="status" hidden>
+      <h2 id="stato-titolo"></h2>
+      <p id="stato-testo"></p>
+    </section>
+  </main>
+
+  <footer class="piede">
+    <span class="versione">v<span id="versione"></span></span>
+    <nav class="menu" aria-label="Menu">
+      <button type="button" data-apri="aiuto">Aiuto</button>
+      <button type="button" data-apri="info">Informazioni</button>
+    </nav>
+  </footer>
+
+  <dialog id="aiuto" class="finestra" aria-labelledby="aiuto-titolo">
+    <div class="finestra-testata">
+      <h2 id="aiuto-titolo">Aiuto</h2>
+      <button type="button" class="chiudi" data-chiudi aria-label="Chiudi">✕</button>
+    </div>
+    <div class="finestra-corpo">
+      <p>La mappa mostra la rete dei <strong>treni regionali</strong>: ogni pallino è una stazione,
+        ogni linea collega due fermate consecutive di almeno un treno.</p>
+      <p>Tocca o passa sopra un pallino per leggere il nome della stazione.
+        Trascina per spostarti, usa due dita o la rotella per lo zoom.</p>
+      <p>Presto: scegli una stazione di partenza e vedi dove arrivi, colorato per tempo di viaggio.</p>
+      <h3>Come sono calcolati i tempi</h3>
+      <p>Si conta solo il tempo passato sui treni, senza le attese ai cambi.
+        Per ogni tratta si usa il regionale più veloce di un giorno feriale tipo.
+        Niente Frecce, Intercity o Italo.</p>
+    </div>
+  </dialog>
+
+  <dialog id="info" class="finestra" aria-labelledby="info-titolo">
+    <div class="finestra-testata">
+      <h2 id="info-titolo">Informazioni</h2>
+      <button type="button" class="chiudi" data-chiudi aria-label="Chiudi">✕</button>
+    </div>
+    <div class="finestra-corpo">
+      <dl class="dati-rete">
+        <dt>Versione</dt><dd id="info-versione"></dd>
+        <dt>Dati</dt><dd id="info-dati">—</dd>
+        <dt>Fonti</dt><dd id="info-fonti">—</dd>
+      </dl>
+      <h3>Novità</h3>
+      <div id="novita" class="novita">Caricamento…</div>
+    </div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+          integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="versione.js"></script>
+  <script src="rete.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

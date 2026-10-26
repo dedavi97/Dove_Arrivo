@@ -136,3 +136,29 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   assente dalla rete (corretto, non è un errore).
 - Node 24: `node --test tests` NON funziona (lo prende come file):
   usare `node --test "tests/**/*.test.js"`.
+
+## Sito (dalla 0.2.0)
+- File: `docs/index.html`, `style.css`, `versione.js` (VERSIONE), `rete.js`
+  (UNICO punto JS che legge rete.json: `caricaRete`, `validaRete`,
+  `formattaData`, `segmentiUnici`), `app.js` (interfaccia). Script classici,
+  niente build; per i test Node ogni file esporta con
+  `if (typeof module !== "undefined") module.exports = …` e `app.js` avvia
+  l'interfaccia solo se esiste `document`.
+- Leaflet 1.9.4 da cdnjs con integrity SRI (hash in index.html).
+- **CARTO dark (basemaps.cartocdn.com) dal 2026 mostra "API KEY REQUIRED"**:
+  si usano le tile OpenStreetMap (`tile.openstreetmap.org`, senza chiave,
+  attribuzione obbligatoria) scurite con filtro CSS `.mappa-scura`.
+- Le novità in "Informazioni" vengono da `docs/CHANGELOG.md`, **copia esatta**
+  di `CHANGELOG.md` (GitHub Pages serve solo `docs/`). Un test verifica che
+  siano identici: dopo ogni modifica del changelog `cp CHANGELOG.md docs/CHANGELOG.md`.
+- GitHub Pages: va configurato su branch `main`, cartella `/docs`
+  (Settings → Pages). URL atteso: https://dedavi97.github.io/Dove_Arrivo/
+- Remote `origin` = https://github.com/dedavi97/Dove_Arrivo.git (aggiunto il
+  26/10/2026, repo vuoto a quella data).
+- Verifica visiva senza browser interattivo: Edge headless
+  (`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --headless=new
+  --screenshot=… --window-size=1440,900 --virtual-time-budget=10000 URL`).
+  Sotto ~500 px di larghezza la finestra headless non si restringe: per il
+  formato telefono mettere il sito in un `<iframe>` largo 390 px servito dalla
+  stessa origine (copia di docs/ nello scratchpad + pagina di prova).
+- `Avvia_Locale.bat`: `python -m http.server 8765 --bind 127.0.0.1 --directory docs`.

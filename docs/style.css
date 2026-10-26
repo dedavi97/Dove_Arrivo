@@ -1,0 +1,168 @@
+:root {
+  --sfondo: #0e1014;
+  --pannello: #171a21;
+  --pannello-alto: #1f232c;
+  --bordo: #2a2f3a;
+  --testo: #e6e8ec;
+  --testo-tenue: #9aa1ad;
+  --accento: #7cb7ff;
+  --linea: #5a7da3;
+  --stazione: #d7dde6;
+  --stazione-fuori: #7d8592;
+  --errore: #ff8a7a;
+  --altezza-testata: 48px;
+  --altezza-piede: 40px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--sfondo);
+  color: var(--testo);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/* --- testata --- */
+.testata {
+  flex: 0 0 var(--altezza-testata);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--pannello);
+  border-bottom: 1px solid var(--bordo);
+}
+.marchio { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: .2px; }
+.data-dati { font-size: 13px; color: var(--testo-tenue); white-space: nowrap; }
+
+/* --- mappa --- */
+.contenuto { position: relative; flex: 1 1 auto; min-height: 0; }
+.mappa { position: absolute; inset: 0; background: var(--sfondo); }
+
+.leaflet-container { background: var(--sfondo); font: inherit; }
+/* Mappa OpenStreetMap chiara resa scura: inversione + colori smorzati. */
+.mappa-scura { filter: invert(1) hue-rotate(180deg) brightness(.7) contrast(.85) saturate(.12); }
+.leaflet-bar a, .leaflet-bar a:hover {
+  background: var(--pannello-alto);
+  color: var(--testo);
+  border-bottom-color: var(--bordo);
+}
+.leaflet-control-attribution {
+  background: rgba(14, 16, 20, .75) !important;
+  color: var(--testo-tenue);
+  font-size: 10px;
+}
+.leaflet-control-attribution a { color: var(--testo-tenue); }
+.leaflet-tooltip.nome-stazione {
+  background: var(--pannello-alto);
+  color: var(--testo);
+  border: 1px solid var(--bordo);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+  font-size: 13px;
+  padding: 3px 8px;
+}
+.leaflet-tooltip.nome-stazione::before { display: none; }
+
+.conteggi {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(23, 26, 33, .88);
+  border: 1px solid var(--bordo);
+  color: var(--testo-tenue);
+  font-size: 12px;
+}
+
+/* --- stati vuoti / errori --- */
+.stato {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  background: rgba(14, 16, 20, .82);
+}
+.stato[hidden] { display: none; }
+.stato h2 { margin: 0 0 8px; font-size: 18px; color: var(--errore); }
+.stato p { margin: 0; max-width: 34em; color: var(--testo-tenue); }
+
+/* --- piede --- */
+.piede {
+  flex: 0 0 var(--altezza-piede);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--pannello);
+  border-top: 1px solid var(--bordo);
+  font-size: 13px;
+  color: var(--testo-tenue);
+}
+.menu { display: flex; gap: 4px; }
+.menu button, .chiudi {
+  font: inherit;
+  color: var(--testo);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.menu button:hover, .chiudi:hover { background: var(--pannello-alto); }
+.menu button:focus-visible, .chiudi:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+
+/* --- finestre --- */
+.finestra {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  background: var(--pannello);
+  color: var(--testo);
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .55);
+}
+.finestra::backdrop { background: rgba(0, 0, 0, .55); }
+.finestra-testata {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 12px 16px;
+  background: var(--pannello);
+  border-bottom: 1px solid var(--bordo);
+}
+.finestra-testata h2 { margin: 0; font-size: 17px; }
+.finestra-corpo { padding: 4px 16px 16px; }
+.finestra-corpo h3 { margin: 18px 0 6px; font-size: 15px; }
+.finestra-corpo p { margin: 10px 0; color: var(--testo-tenue); }
+.finestra-corpo strong { color: var(--testo); }
+.finestra a { color: var(--accento); }
+
+.dati-rete { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 12px 0 0; }
+.dati-rete dt { color: var(--testo-tenue); }
+.dati-rete dd { margin: 0; overflow-wrap: anywhere; }
+
+.novita h4 { margin: 14px 0 4px; font-size: 14px; }
+.novita ul { margin: 0; padding-left: 20px; color: var(--testo-tenue); }
+.novita li { margin: 3px 0; }
+.novita code { font-size: 12px; color: var(--testo); }
