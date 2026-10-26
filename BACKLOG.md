@@ -7,6 +7,7 @@
 - [x] 0.3.0 Partenza, cursori, calcolo percorsi, pannello meta, Verifica prezzo
 - [x] 0.4.0 Estensione a tutta Italia (solo Trenitalia)
 - [x] 0.5.0 Filtro stazioni per abitanti del comune (cursore, le altre spariscono)
+- [ ] Prossima: cursore "Ore max" fino a 12 ore (oggi arriva a 6).
 
 ## In attesa
 - Niente al momento.
