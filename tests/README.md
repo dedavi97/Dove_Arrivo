@@ -11,7 +11,8 @@ Entrambi devono essere verdi prima di ogni commit di tappa.
   calendari ed eccezioni, minuti dopo mezzanotte, scelta del giorno tipo,
   nomi, riduzione delle corse, regioni (anche costa ed estero), lettura e
   scrittura di rete.json, confronto, pubblicazione del solo file dati su un
-  repository git di prova. Non usa internet.
+  repository git di prova, comuni e abitanti (riga totale ISTAT, abbinamento
+  dei codici sardi per nome, stazioni sulla costa). Non usa internet.
 - `sito.test.js`: lettura e controllo di rete.json (anche quello pubblicato),
   date, segmenti della mappa, novità, e che `docs/CHANGELOG.md` sia uguale a `CHANGELOG.md`.
 - `percorsi.test.js`: calcolo delle mete a giri (cambi, tempo massimo, solo

@@ -5,6 +5,8 @@ const URL_NOVITA = "CHANGELOG.md";
 const URL_TRENITALIA = "https://www.lefrecce.it/Channels.Website.WEB/";
 const CHIAVE_MEMORIA = "dove_arrivo_stato";
 const CENTRO_INIZIALE = [45.05, 7.9];
+// Gradini del cursore "abitanti min": irregolari, così anche le soglie piccole si scelgono bene.
+const SOGLIE_ABITANTI = [0, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 250000, 500000];
 const ZOOM_INIZIALE = 8;
 
 const stato = {
@@ -16,6 +18,7 @@ const stato = {
   mete: new Map(),
   maxCambi: 1,
   maxOre: 2,
+  soglia: 0, // indice in SOGLIE_ABITANTI
   imp: { ricorda: true, linee: true },
 };
 let mappa = null;
@@ -69,6 +72,16 @@ function nelPerimetro(stazione, perimetro) {
   return perimetro === "Italia" ? stazione.regione !== "Estero" : stazione.regione === perimetro;
 }
 
+function testoSoglia(abitanti) {
+  return abitanti ? abitanti.toLocaleString("it-IT") : "tutti";
+}
+
+// Le stazioni di comuni sotto soglia spariscono; restano quelle senza dato (all'estero)
+// e la partenza scelta.
+function stazioneVisibile(stazione, abitantiMin, origine) {
+  return stazione.id === origine || stazione.abitanti === undefined || stazione.abitanti >= abitantiMin;
+}
+
 function testoCambi(n) {
   return n === 0 ? "diretto" : n === 1 ? "1 cambio" : `${n} cambi`;
 }
@@ -85,7 +98,9 @@ function leggiMemoria() {
 
 function salvaMemoria() {
   const dati = { imp: stato.imp };
-  if (stato.imp.ricorda) Object.assign(dati, { origine: stato.origine, maxCambi: stato.maxCambi, maxOre: stato.maxOre });
+  if (stato.imp.ricorda) {
+    Object.assign(dati, { origine: stato.origine, maxCambi: stato.maxCambi, maxOre: stato.maxOre, soglia: stato.soglia });
+  }
   try {
     localStorage.setItem(CHIAVE_MEMORIA, JSON.stringify(dati));
   } catch (e) {
@@ -157,8 +172,14 @@ function disegnaRete() {
 function colora() {
   const r = raggioStazione(mappa.getZoom());
   const sfondo = colore("--sfondo");
+  const minimo = SOGLIE_ABITANTI[stato.soglia];
   for (const [id, pallino] of pallini) {
     const s = stato.perId.get(id);
+    if (!stazioneVisibile(s, minimo, stato.origine)) {
+      if (mappa.hasLayer(pallino)) pallino.remove();
+      continue;
+    }
+    if (!mappa.hasLayer(pallino)) pallino.addTo(mappa);
     let stile;
     if (id === stato.origine) {
       stile = { radius: r + 3, color: "#ffffff", weight: 2, fillColor: colore("--origine") };
@@ -174,7 +195,7 @@ function colora() {
     if (id === stato.meta) Object.assign(stile, { radius: r + 3, color: "#ffffff", weight: 2 });
     pallino.setStyle(stile);
   }
-  if (stato.meta) pallini.get(stato.meta).bringToFront();
+  if (stato.meta && mappa.hasLayer(pallini.get(stato.meta))) pallini.get(stato.meta).bringToFront();
   if (stato.origine) pallini.get(stato.origine).bringToFront();
   anelliCambio.forEach((anello) => anello.setRadius(r + 5).bringToFront());
 }
@@ -238,8 +259,19 @@ function ricalcola() {
     : new Map();
   colora();
   aggiornaSuggerimento();
-  if (stato.meta) mostraScheda(stato.meta);
+  if (stato.meta && !stazioneVisibile(stato.perId.get(stato.meta), SOGLIE_ABITANTI[stato.soglia], stato.origine)) {
+    chiudiScheda(); // la meta aperta è sparita col filtro abitanti
+  } else if (stato.meta) {
+    mostraScheda(stato.meta);
+  }
   salvaMemoria();
+}
+
+function meteVisibili() {
+  const minimo = SOGLIE_ABITANTI[stato.soglia];
+  let n = 0;
+  for (const id of stato.mete.keys()) if (stazioneVisibile(stato.perId.get(id), minimo, stato.origine)) n++;
+  return n;
 }
 
 function aggiornaSuggerimento() {
@@ -248,8 +280,10 @@ function aggiornaSuggerimento() {
     box.textContent = "Tocca una stazione o cercala in alto per scegliere la partenza";
   } else if (!stato.mete.size) {
     box.textContent = "Nessuna meta raggiungibile con questi limiti: prova ad aumentare cambi o ore";
+  } else if (!meteVisibili()) {
+    box.textContent = "Nessuna meta sopra la soglia di abitanti: prova ad abbassarla";
   } else {
-    const n = stato.mete.size;
+    const n = meteVisibili();
     box.textContent = `${n} ${n === 1 ? "meta raggiungibile" : "mete raggiungibili"} · tocca una meta per il percorso`;
   }
   box.hidden = false;
@@ -284,13 +318,17 @@ function mostraScheda(id) {
   const rete = stato.rete;
   const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
   const etichetta = stato.mete.get(id);
-  document.getElementById("scheda-titolo").textContent = stato.perId.get(id).nome;
+  const stazione = stato.perId.get(id);
+  document.getElementById("scheda-titolo").textContent = stazione.nome;
   const corpo = document.getElementById("scheda-corpo");
+  const comune = stazione.abitanti !== undefined
+    ? `<p class="comune">Comune di ${escapeHtml(stazione.comune)} · ${stazione.abitanti.toLocaleString("it-IT")} abitanti</p>`
+    : "";
   const partiDaQui = `<button type="button" class="bottone" data-azione="parti">Parti da qui</button>`;
 
   if (!etichetta) {
     const cambi = stato.maxCambi === 0 ? "senza cambi" : `con al massimo ${testoCambi(stato.maxCambi)}`;
-    corpo.innerHTML =
+    corpo.innerHTML = comune +
       `<p class="totale">Non raggiungibile da ${nome(stato.origine)} ${cambi} ` +
       `e ${formattaDurata(stato.maxOre * 60)} di treno.</p>` +
       `<div class="azioni">${partiDaQui}</div>`;
@@ -312,7 +350,7 @@ function mostraScheda(id) {
           `<span class="prosegue">${prosegue}</span></li>`
       );
     });
-    corpo.innerHTML =
+    corpo.innerHTML = comune +
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
       `<ol class="tratte">${righe.join("")}</ol>` +
       `<div class="azioni">` +
@@ -381,7 +419,8 @@ function preparaRicerca() {
 
   campo.addEventListener("focus", () => campo.select());
   campo.addEventListener("input", () => {
-    trovate = cercaStazioni(stato.rete.stazioni, campo.value);
+    const minimo = SOGLIE_ABITANTI[stato.soglia];
+    trovate = cercaStazioni(stato.rete.stazioni.filter((s) => stazioneVisibile(s, minimo, null)), campo.value);
     attiva = 0;
     campo.value.trim() ? disegna() : chiudi();
   });
@@ -420,12 +459,21 @@ function preparaRicerca() {
 function preparaCursori() {
   const cambi = document.getElementById("cambi");
   const ore = document.getElementById("ore");
+  const abitanti = document.getElementById("abitanti");
   const mostra = () => {
     document.getElementById("val-cambi").textContent = stato.maxCambi;
     document.getElementById("val-ore").textContent = formattaDurata(stato.maxOre * 60);
+    document.getElementById("val-abitanti").textContent = testoSoglia(SOGLIE_ABITANTI[stato.soglia]);
   };
   cambi.value = stato.maxCambi;
   ore.value = stato.maxOre;
+  abitanti.max = SOGLIE_ABITANTI.length - 1;
+  abitanti.value = stato.soglia;
+  abitanti.addEventListener("input", () => {
+    stato.soglia = Number(abitanti.value);
+    mostra();
+    ricalcola();
+  });
   mostra();
   cambi.addEventListener("input", () => {
     stato.maxCambi = Number(cambi.value);
@@ -511,6 +559,7 @@ async function avvia() {
   if (stato.imp.ricorda) {
     if ([0, 1, 2, 3].includes(memoria.maxCambi)) stato.maxCambi = memoria.maxCambi;
     if (typeof memoria.maxOre === "number" && memoria.maxOre >= 0.5 && memoria.maxOre <= 6) stato.maxOre = memoria.maxOre;
+    if (Number.isInteger(memoria.soglia) && memoria.soglia >= 0 && memoria.soglia < SOGLIE_ABITANTI.length) stato.soglia = memoria.soglia;
   }
   preparaFinestre();
   preparaImpostazioni();
@@ -556,5 +605,7 @@ if (typeof document !== "undefined") {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { changelogInHtml, escapeHtml, raggioStazione, testoCambi, nelPerimetro };
+  module.exports = {
+    changelogInHtml, escapeHtml, raggioStazione, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
+  };
 }

@@ -3,6 +3,15 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.5.0 — 27/10/2026
+- Nuovo cursore "Abitanti min": mostra solo le stazioni dei comuni sopra la
+  soglia scelta (da tutti fino a 500.000 abitanti); le altre spariscono dalla
+  mappa, dalle mete e dalla ricerca. I treni ci passano comunque e ci si può
+  cambiare: in quel caso l'anello viola resta visibile.
+- La scheda di una meta indica comune e abitanti.
+- Dati: comune e abitanti di ogni stazione italiana (ISTAT, popolazione al
+  1° gennaio 2026).
+
 ## 0.4.0 — 27/10/2026
 - Tutta Italia: 2082 treni regionali Trenitalia e 1714 stazioni (prima solo
   il Piemonte). Il calcolo resta istantaneo anche con 3 cambi e 6 ore.

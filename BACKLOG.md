@@ -6,9 +6,7 @@
 - [x] 0.2.0 Sito: mappa con stazioni e linee, data aggiornamento, footer (+ `Avvia_Locale.bat`)
 - [x] 0.3.0 Partenza, cursori, calcolo percorsi, pannello meta, Verifica prezzo
 - [x] 0.4.0 Estensione a tutta Italia (solo Trenitalia)
-- [ ] Prossima funzione: filtro per mostrare solo le stazioni dei comuni
-  sopra una certa soglia di abitanti (scelta dall'utente). Servono comune e
-  popolazione di ogni stazione (es. dati ISTAT sui comuni) nello scanner.
+- [x] 0.5.0 Filtro stazioni per abitanti del comune (cursore, le altre spariscono)
 
 ## In attesa
 - Niente al momento.

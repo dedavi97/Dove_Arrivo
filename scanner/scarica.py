@@ -1,5 +1,6 @@
 """Download dei file sorgente, con cache su disco e nuovi tentativi."""
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -15,6 +16,11 @@ def _con_tentativi(funzione, descrizione):
             time.sleep(attesa)
         try:
             return funzione()
+        except urllib.error.HTTPError as errore:
+            if errore.code == 404:  # il file non esiste: riprovare non serve
+                raise FileNotFoundError(f"{descrizione}: file non trovato (404)") from errore
+            ultimo = errore
+            print(f"    {descrizione}: non riuscito ({errore})")
         except OSError as errore:
             ultimo = errore
             print(f"    {descrizione}: non riuscito ({errore})")

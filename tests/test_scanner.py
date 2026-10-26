@@ -316,3 +316,67 @@ def test_pubblica_solo_il_file_dati(tmp_path):
     ultimo = subprocess.run(["git", "log", "-1", "--name-only", "--format=%s", "origin/main"], cwd=locale, capture_output=True, text=True).stdout.split()
     assert " ".join(ultimo[:4]) == "data: aggiornamento rete 26/10/2026"
     assert ultimo[4:] == ["docs/data/rete.json"]
+
+
+# --- comuni e abitanti -------------------------------------------------------
+
+from scanner import comuni
+
+
+def _zip_popolazione(tmp_path, righe):
+    percorso = tmp_path / "pop.zip"
+    testo = '﻿"Popolazione residente per età e sesso al 1° gennaio 2026 (stima)"\n'
+    testo += '"Codice comune";"Comune";"Et�";"Totale maschi";"Totale femmine";"Totale"\n'
+    testo += "\n".join(righe) + "\n\n"
+    with zipfile.ZipFile(percorso, "w") as z:
+        z.writestr("POSAS.csv", testo.encode("utf-8"))
+    return percorso
+
+
+def test_carica_popolazione_usa_la_riga_totale(tmp_path):
+    percorso = _zip_popolazione(tmp_path, [
+        '"001272";"Torino";0;10;10;20',
+        '"001272";"Torino";999;400;455;855',
+        '"090003";"Alghero";999;20;20;40',
+    ])
+    assert comuni.carica_popolazione(percorso) == {"001272": ("Torino", 855), "090003": ("Alghero", 40)}
+
+
+def test_abbina_popolazione_per_codice_e_per_nome():
+    elenco = [
+        regioni.Regione("Torino", [[_quadrato(0, 0, 1)]], "001272"),
+        regioni.Regione("Alghero", [[_quadrato(2, 0, 1)]], "112001"),     # codice sardo nuovo
+        regioni.Regione("Sconosciuto", [[_quadrato(4, 0, 1)]], "999999"),
+    ]
+    popolazione = {"001272": ("Torino", 855), "090003": ("Alghero", 40), "001001": ("Altro", 5)}
+    abbinati, senza = comuni.abbina_popolazione(elenco, popolazione)
+    assert abbinati == {"001272": 855, "112001": 40}
+    assert senza == ["Sconosciuto"]
+
+
+def test_abbina_per_nome_non_confonde_omonimi_gia_abbinati():
+    # "Samone" esiste in due regioni: quello con codice giusto non deve finire nei ripieghi
+    elenco = [regioni.Regione("Samone", [[_quadrato(0, 0, 1)]], "001234"), regioni.Regione("Samone", [[_quadrato(2, 0, 1)]], "022999")]
+    popolazione = {"001234": ("Samone", 1600), "022165": ("Samone", 550)}
+    abbinati, _ = comuni.abbina_popolazione(elenco, popolazione)
+    assert abbinati == {"001234": 1600, "022999": 550}
+
+
+def test_comune_di_dentro_costa_e_lontano():
+    elenco = [regioni.Regione("Alfa", [[_quadrato(0, 0, 1)]], "1"), regioni.Regione("Beta", [[_quadrato(1, 0, 1)]], "2")]
+    assert comuni.comune_di(0.5, 1.5, elenco).nome == "Beta"
+    assert comuni.comune_di(-0.005, 0.5, elenco).nome == "Alfa"   # ~0,55 km fuori: costa
+    assert comuni.comune_di(-0.05, 0.5, elenco) is None            # ~5,5 km fuori
+    assert comuni.comune_di(30, 30, elenco) is None
+
+
+def test_costruisci_rete_aggiunge_comune_e_abitanti():
+    stazioni = {"1": Stazione("1", "TORINO", 45.0, 7.6), "2": Stazione("2", "MODANE", 45.2, 6.7)}
+    regione = {"1": "Piemonte", "2": "Estero"}
+    r = costruisci.costruisci_rete(
+        [Corsa("1", "REG", [("1", 0), ("2", 60)])], stazioni, lambda s: regione[s.id], "Piemonte",
+        datetime.date(2026, 10, 26), [MERCOLEDI], "test", lambda s: ("Torino", 855654),
+    )
+    torino, modane = sorted(r["stazioni"], key=lambda s: s["id"])
+    assert (torino["comune"], torino["abitanti"]) == ("Torino", 855654)
+    assert "abitanti" not in modane   # all'estero non si cerca il comune

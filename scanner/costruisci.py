@@ -45,8 +45,8 @@ def _numero(corsa):
     return int(corsa.numero) if corsa.numero.isdigit() else float("inf")
 
 
-def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte):
-    """regione_di(stazione) -> nome regione."""
+def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte, comune_di=None):
+    """regione_di(stazione) -> nome regione; comune_di(stazione) -> (comune, abitanti) oppure None."""
     regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
     dentro = (lambda r: r != ESTERO) if perimetro == ITALIA else (lambda r: r == perimetro)
     nel_perimetro = [c for c in corse if any(dentro(regioni[s]) for s, _ in c.fermate)]
@@ -64,16 +64,7 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
             "corse_considerate": len(nel_perimetro),
             "fonte": fonte,
         },
-        "stazioni": [
-            {
-                "id": i,
-                "nome": bel_nome(stazioni[i].nome),
-                "lat": round(stazioni[i].lat, 5),
-                "lon": round(stazioni[i].lon, 5),
-                "regione": regioni[i],
-            }
-            for i in usate
-        ],
+        "stazioni": [_stazione(stazioni[i], regioni[i], comune_di) for i in usate],
         "treni": [
             {
                 "numero": c.numero,
@@ -84,3 +75,11 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
         ],
     }
     return rete
+
+
+def _stazione(s, regione, comune_di):
+    dati = {"id": s.id, "nome": bel_nome(s.nome), "lat": round(s.lat, 5), "lon": round(s.lon, 5), "regione": regione}
+    trovato = comune_di(s) if comune_di and regione != ESTERO else None
+    if trovato:
+        dati["comune"], dati["abitanti"] = trovato
+    return dati

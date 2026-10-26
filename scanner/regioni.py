@@ -7,9 +7,12 @@ SOGLIA_COSTA_KM = 1.0
 
 
 class Regione:
-    def __init__(self, nome, poligoni):
+    """Un'area con confini: regione, o comune (vedi comuni.py, che usa anche `codice`)."""
+
+    def __init__(self, nome, poligoni, codice=None):
         # Nomi bilingui ("Valle d'Aosta/Vallée d'Aoste"): si tiene la parte italiana.
         self.nome = nome.split("/")[0]
+        self.codice = codice
         self.poligoni = poligoni  # [[anello esterno, buco, buco...], ...]; anello = [(lon, lat), ...]
         punti = [p for poligono in poligoni for p in poligono[0]]
         self.lon_min = min(p[0] for p in punti)

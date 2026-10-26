@@ -33,6 +33,10 @@
         <span class="cursore-etichetta">Ore max <output id="val-ore" for="ore">2 h</output></span>
         <input id="ore" type="range" min="0.5" max="6" step="0.5" value="2">
       </label>
+      <label class="cursore">
+        <span class="cursore-etichetta">Abitanti min <output id="val-abitanti" for="abitanti">tutti</output></span>
+        <input id="abitanti" type="range" min="0" max="9" step="1" value="0">
+      </label>
     </div>
   </section>
 
@@ -93,7 +97,9 @@
     <div class="finestra-corpo">
       <h3>Come si usa</h3>
       <p><strong>1. Scegli la partenza:</strong> tocca una stazione sulla mappa oppure scrivine il nome nella casella in alto.</p>
-      <p><strong>2. Imposta i limiti:</strong> quanti cambi al massimo e quante ore al massimo di viaggio.</p>
+      <p><strong>2. Imposta i limiti:</strong> quanti cambi al massimo e quante ore al massimo di viaggio.
+        Con "Abitanti min" restano solo le stazioni dei comuni più grandi: le altre spariscono
+        (i treni ci passano comunque e ci si può cambiare).</p>
       <p><strong>3. Guarda dove arrivi:</strong> le stazioni si colorano in verde (meno di 1 ora), giallo (1–2 ore)
         o rosso (oltre 2 ore). Quelle spente non si raggiungono con quei limiti.</p>
       <p><strong>4. Tocca una meta</strong> per vedere i treni da prendere, dove cambiare e fin dove prosegue

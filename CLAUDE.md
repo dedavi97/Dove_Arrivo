@@ -30,7 +30,9 @@ della meta scelta, pulsante "Verifica prezzo" verso Trenitalia. Niente prezzi.
 ## Formato rete.json (formato_versione 1)
 - `meta`: tipo `"Dove_Arrivo_Rete"`, `formato_versione` 1, `data_aggiornamento`,
   `perimetro`, `conteggi` (stazioni, treni).
-- `stazioni`: id, nome, lat, lon, regione.
+- `stazioni`: id, nome, lat, lon, regione; dalla 0.5.0 anche `comune` e
+  `abitanti` (solo stazioni italiane: le estere non li hanno). Campi aggiunti
+  senza cambiare `formato_versione` (chi non li conosce li ignora).
 - `treni`: numero, categoria, fermate in ordine `[{stazione, minuti_dalla_partenza}]`.
 - Un solo punto del codice legge/scrive il file (uno in Python, uno in JS).
   Formato sconosciuto o versione diversa → messaggio chiaro, nessuna conversione.
@@ -179,6 +181,30 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   nell'orario: "Venezia Mestre Binario 1 Giardino", "Firenze Binario S.Marco Vecchio".
 - `bel_nome`: `ABBREVIAZIONI` per fine nome (`C.Le` → `Centrale`).
 - `raggioStazione`: 2,2 px sotto zoom 7, 2,8 a 7, 3,5 da 8.
+
+## Comuni e abitanti (dalla 0.5.0)
+- `scanner/comuni.py`. Confini comunali: openpolis
+  `geojson/limits_IT_municipalities.geojson` (≈36 MB, 7896 comuni, ISTAT
+  1/1/2026, proprietà `name`, `com_istat_code`), scaricato una volta in cache.
+- Popolazione: `https://demo.istat.it/data/posas/POSAS_{anno}_it_Comuni.zip`
+  (≈4,5 MB). CSV con `;`, riga di titolo + intestazione, colonne codice,
+  comune, età, maschi, femmine, totale; **la riga con età `999` è il totale**.
+  Nel file alcune lettere accentate sono già rovinate (U+FFFD) e c'è una riga
+  vuota finale. Si prova l'anno in corso, poi il precedente (404 = non ancora
+  pubblicato: `scarica` non ritenta i 404, alza FileNotFoundError).
+- **Sardegna 2026**: nuove province, 377 comuni con codici diversi tra confini
+  (es. Alghero 112001) e popolazione (090003). `abbina_popolazione` li abbina
+  per nome solo tra i codici rimasti spaiati. Risultato 27/10/2026: tutti i
+  7896 comuni abbinati, 1701 stazioni italiane su 1701 con comune e abitanti.
+- Stazione → comune: punto nel poligono (bbox + margine 0,02°), altrimenti
+  il comune più vicino entro 1 km (costa).
+- Sito: cursore `abitanti` = indice in `SOGLIE_ABITANTI` (0, 1k, 2k, 5k, 10k,
+  20k, 50k, 100k, 250k, 500k). `stazioneVisibile()`: visibili se senza dato
+  (estero), se partenza, o se abitanti ≥ soglia. Le nascoste: pallino rimosso
+  dalla mappa, escluse da mete, conteggio e ricerca; restano nel calcolo
+  (cambi possibili) con anello viola se servono.
+- Stazioni visibili per soglia (27/10/2026): 5k → 1244, 20k → 648,
+  100k → 239, 500k → 108.
 
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,

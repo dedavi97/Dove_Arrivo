@@ -217,9 +217,14 @@ body {
 .risultati li[aria-selected="true"], .risultati li:hover { background: var(--bordo); }
 .risultati .regione { color: var(--testo-tenue); font-size: 12px; margin-left: 6px; }
 
-.cursori { display: flex; gap: 20px; flex: 1 1 280px; }
-.cursore { flex: 1 1 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.cursore-etichetta { font-size: 13px; color: var(--testo-tenue); }
+.cursori { display: flex; gap: 14px; flex: 1 1 420px; }
+.cursore { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cursore-etichetta { font-size: 13px; color: var(--testo-tenue); white-space: nowrap; }
+@media (max-width: 480px) {
+  .cursori { gap: 10px; }
+  .cursore-etichetta { font-size: 12px; }
+  .cursore-etichetta output { margin-left: 2px; }
+}
 .cursore-etichetta output { color: var(--testo); font-weight: 600; margin-left: 4px; }
 .cursore input { width: 100%; accent-color: var(--accento); margin: 0; }
 
@@ -306,6 +311,7 @@ body {
 }
 .scheda-testata h2 { margin: 0; font-size: 18px; }
 .scheda-corpo { padding: 0 16px 16px; }
+.comune { margin: -4px 0 10px; color: var(--testo-tenue); font-size: 13px; }
 .totale { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; color: var(--testo-tenue); }
 .totale strong { font-size: 22px; color: var(--testo); }
 .tratte { list-style: none; margin: 0; padding: 0; }

@@ -91,6 +91,18 @@ test("le novità mostrate dal sito coincidono con CHANGELOG.md", () => {
   assert.strictEqual(sito, radice, "copia CHANGELOG.md in docs/CHANGELOG.md");
 });
 
+test("filtro abitanti: visibilità e testo della soglia", () => {
+  const { stazioneVisibile, testoSoglia, SOGLIE_ABITANTI } = require("../docs/app.js");
+  assert.strictEqual(SOGLIE_ABITANTI[0], 0);
+  assert.ok(SOGLIE_ABITANTI.every((v, i) => i === 0 || v > SOGLIE_ABITANTI[i - 1]));
+  assert.ok(stazioneVisibile({ id: "a", abitanti: 5000 }, 5000, null));
+  assert.ok(!stazioneVisibile({ id: "a", abitanti: 4999 }, 5000, null));
+  assert.ok(stazioneVisibile({ id: "a", abitanti: 10 }, 5000, "a"), "la partenza resta visibile");
+  assert.ok(stazioneVisibile({ id: "x" }, 500000, null), "senza dato (estero) resta visibile");
+  assert.strictEqual(testoSoglia(0), "tutti");
+  assert.strictEqual(testoSoglia(20000), "20.000");
+});
+
 test("cercaStazioni: accenti, punteggiatura e ordine dei risultati", () => {
   const { cercaStazioni, normalizzaNome } = require("../docs/rete.js");
   const stazioni = ["Asti", "Isola d'Asti", "Castello d'Annone", "S.Damiano d'Asti", "Pastìcceria"].map((nome, i) => ({ id: String(i), nome }));
