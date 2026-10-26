@@ -171,10 +171,10 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da
   specifica, `fermateTratta`, `restoTratta`, `minutiTratta`, `fascia`
   (<60 verde, 60–120 giallo, >120 rosso), `formattaDurata`.
-- **Soglia cambi** `SOGLIA_CAMBIO_MINUTI = 10` (introdotta il 26/10/2026,
-  da confermare con Davide): tra i percorsi trovati per una meta (uno per
+- **Soglia cambi** `SOGLIA_CAMBIO_MINUTI = 15` (introdotta a 10 il 26/10/2026,
+  portata a 15 da Davide lo stesso giorno): tra i percorsi trovati per una meta (uno per
   numero di treni, sempre più veloci) se ne sceglie uno con più cambi solo se
-  risparmia ≥10 min per ogni cambio in più. Motivo: senza, Torino PN→Asti
+  risparmia ≥15 min per ogni cambio in più. Motivo: senza, Torino PN→Asti
   usciva "34 min, cambio a Lingotto" invece del diretto da 35. L'esplorazione
   resta sul tempo minimo puro; i minuti mostrati sono quelli veri.
 - `cercaStazioni` / `normalizzaNome` in `rete.js` (accenti e punteggiatura ignorati).

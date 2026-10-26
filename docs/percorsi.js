@@ -18,7 +18,7 @@ function creaIndice(rete) {
 // Un percorso con un cambio in più si preferisce solo se fa risparmiare almeno
 // questi minuti per ogni cambio aggiunto (es. Torino-Asti: niente cambio a
 // Lingotto per guadagnare 1 minuto sul diretto). Il tempo mostrato resta quello vero.
-const SOGLIA_CAMBIO_MINUTI = 10;
+const SOGLIA_CAMBIO_MINUTI = 15; // valore scelto da Davide il 26/10/2026
 
 // Restituisce Map id stazione -> { minuti, tratte: [{ treno, da, a }] } (origine esclusa).
 // treno = indice in rete.treni, da/a = indici delle fermate di quel treno.

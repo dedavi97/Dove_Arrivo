@@ -88,17 +88,17 @@ test("un cambio che fa risparmiare meno della soglia non batte il diretto", () =
 });
 
 test("la soglia vale per ogni cambio in più", () => {
-  // diretto 100; 1 cambio 95 (risparmio 5: no); 2 cambi 75 (risparmio 25 ≥ 2×10: sì)
+  // diretto 100; 1 cambio 95 (risparmio 5 < 15: no); 2 cambi 65 (risparmio 35 ≥ 2×15: sì)
   const rete = {
     stazioni: [],
     treni: [
       treno("1", ["A", 0], ["X", 100]),
       treno("2", ["A", 0], ["B", 45]), treno("3", ["B", 0], ["X", 50]),
-      treno("4", ["A", 0], ["C", 25]), treno("5", ["C", 0], ["D", 25]), treno("6", ["D", 0], ["X", 25]),
+      treno("4", ["A", 0], ["C", 20]), treno("5", ["C", 0], ["D", 20]), treno("6", ["D", 0], ["X", 25]),
     ],
   };
   const x = P.calcolaMete(P.creaIndice(rete), "A", 2, 600).get("X");
-  assert.deepStrictEqual([x.minuti, x.tratte.length], [75, 3]);
+  assert.deepStrictEqual([x.minuti, x.tratte.length], [65, 3]);
   const conUnCambio = P.calcolaMete(P.creaIndice(rete), "A", 1, 600).get("X");
   assert.deepStrictEqual([conUnCambio.minuti, conUnCambio.tratte.length], [100, 1]);
 });

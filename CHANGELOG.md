@@ -8,6 +8,8 @@ Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
   prosegue (o se termina) e la mappa ne mostra la prosecuzione tratteggiata.
 - Le stazioni di cambio sono segnate sulla mappa con un anello viola, anche
   in legenda.
+- Un percorso con un cambio in più ora viene proposto solo se fa risparmiare
+  almeno 15 minuti per cambio (prima 10).
 
 ## 0.3.0 — 26/10/2026
 - Scegli la stazione di partenza toccandola sulla mappa o cercandola per nome.

@@ -8,7 +8,7 @@
 - [ ] 0.4.0 Estensione a tutta Italia
 
 ## In attesa
-- Conferma di Davide sulla soglia di 10 minuti per cambio (o altro valore).
+- Niente al momento.
 
 ## Idee per dopo
 - Altri operatori regionali (Trenord, GTT, TILO…) non presenti nell'orario
