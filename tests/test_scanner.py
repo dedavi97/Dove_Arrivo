@@ -1,0 +1,288 @@
+import datetime
+import json
+import subprocess
+import zipfile
+
+import pytest
+
+from scanner import costruisci, gtfs, pubblica, regioni, rete
+from scanner.gtfs import Corsa, Stazione
+
+# --- orario GTFS finto -------------------------------------------------------
+
+TABELLE = {
+    "feed_info.txt": "feed_start_date,feed_end_date\n20261024,20271211\n",
+    "routes.txt": "route_id,route_short_name\nr1,0083_REG\nr2,0083_FR\nr3,0083_BUS\n",
+    "calendar.txt": (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "feriale,1,1,1,1,1,0,0,20261024,20271211\n"
+        "festivo,0,0,0,0,0,1,1,20261024,20271211\n"
+        "soppresso,1,1,1,1,1,0,0,20261024,20271211\n"
+    ),
+    "calendar_dates.txt": (
+        "service_id,date,exception_type\n"
+        "soppresso,20261104,2\n"
+        "festivo,20261104,1\n"
+    ),
+    "trips.txt": (
+        "route_id,service_id,trip_id,trip_short_name\n"
+        "r1,feriale,t1,100\n"
+        "r1,festivo,t2,200\n"
+        "r1,soppresso,t3,300\n"
+        "r2,feriale,t4,9000\n"
+        "r3,feriale,t5,BUS1\n"
+        "r1,feriale,t6,400\n"
+    ),
+    "stops.txt": (
+        "stop_id,stop_code,stop_name,stop_lat,stop_lon,location_type,parent_station\n"
+        "SPA,830000001,STAZIONE A,45.0,7.5,1,\n"
+        "SSA,830000001,STAZIONE A,45.0,7.5,0,SPA\n"
+        "SPB,830000002,STAZIONE B,45.1,7.6,1,\n"
+        "SSB,830000002,STAZIONE B,45.1,7.6,0,SPB\n"
+        "SPC,830000003,STAZIONE C,45.2,7.7,1,\n"
+        "SSC,830000003,STAZIONE C,45.2,7.7,0,SPC\n"
+    ),
+    "stop_times.txt": (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "t1,23:50:00,23:50:00,SSA,1\n"
+        "t1,24:05:00,24:06:00,SSB,2\n"
+        "t1,24:20:00,24:20:00,SSC,3\n"
+        "t2,10:00:00,10:00:00,SSA,1\n"
+        "t2,10:30:00,10:30:00,SSB,2\n"
+        "t3,10:00:00,10:00:00,SSA,1\n"
+        "t3,10:30:00,10:30:00,SSB,2\n"
+        "t4,10:00:00,10:00:00,SSA,1\n"
+        "t4,10:10:00,10:10:00,SSC,2\n"
+        "t5,10:00:00,10:00:00,SSA,1\n"
+        "t5,10:10:00,10:10:00,SSB,2\n"
+        "t6,10:00:00,10:00:00,SSA,1\n"
+        "t6,09:50:00,09:50:00,SSB,2\n"
+    ),
+}
+
+
+@pytest.fixture
+def archivio(tmp_path):
+    percorso = tmp_path / "gtfs.zip"
+    with zipfile.ZipFile(percorso, "w") as z:
+        for nome, testo in TABELLE.items():
+            z.writestr(nome, testo)
+    return gtfs.apri(percorso)
+
+
+MERCOLEDI = datetime.date(2026, 11, 4)
+
+
+def test_validita(archivio):
+    assert gtfs.validita(archivio) == (datetime.date(2026, 10, 24), datetime.date(2027, 12, 11))
+
+
+def test_servizi_attivi_con_eccezioni(archivio):
+    assert gtfs.servizi_attivi(archivio, MERCOLEDI) == {"feriale", "festivo"}
+
+
+def test_leggi_corse(archivio):
+    corse, stazioni, avvisi = gtfs.leggi_corse(archivio, MERCOLEDI, {"REG"})
+    per_numero = {c.numero: c for c in corse}
+    assert set(per_numero) == {"100", "200"}  # 300 soppresso, 9000 Freccia, BUS1 autobus, 400 scartato
+    # dopo mezzanotte (24:xx) e con l'arrivo come riferimento
+    assert per_numero["100"].fermate == [("830000001", 0), ("830000002", 15), ("830000003", 30)]
+    assert stazioni["830000002"].nome == "STAZIONE B"
+    assert len(avvisi) == 1 and "400" in avvisi[0]
+
+
+def test_avanzamento_arriva_al_cento(archivio):
+    valori = []
+    gtfs.leggi_corse(archivio, MERCOLEDI, {"REG"}, valori.append)
+    assert valori and valori[-1] == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("oggi, atteso", [
+    (datetime.date(2026, 10, 26), datetime.date(2026, 11, 4)),   # almeno una settimana dopo
+    (datetime.date(2027, 11, 28), datetime.date(2027, 12, 15)),  # mercoledì 8/12/2027 è festivo
+    (datetime.date(2026, 12, 15), datetime.date(2027, 1, 13)),   # salta le feste natalizie
+])
+def test_scegli_giorno_tipo(oggi, atteso):
+    assert gtfs.scegli_giorno_tipo(oggi, datetime.date(2026, 10, 24), datetime.date(2028, 6, 30)) == atteso
+
+
+def test_scegli_giorno_tipo_fuori_validita():
+    with pytest.raises(ValueError):
+        gtfs.scegli_giorno_tipo(datetime.date(2026, 10, 26), datetime.date(2026, 10, 1), datetime.date(2026, 10, 30))
+
+
+# --- nomi e riduzione corse ---------------------------------------------------
+
+@pytest.mark.parametrize("grezzo, bello", [
+    ("TORINO PORTA NUOVA", "Torino Porta Nuova"),
+    ("REGGIO DI CALABRIA S.CATERINA", "Reggio di Calabria S.Caterina"),
+    ("CASTELLO D'ANNONE", "Castello d'Annone"),
+    ("VERBANIA-PALLANZA", "Verbania-Pallanza"),
+    ("DI QUALCOSA", "Di Qualcosa"),
+    ("Torino Aeroporto di Caselle", "Torino Aeroporto di Caselle"),
+])
+def test_bel_nome(grezzo, bello):
+    assert costruisci.bel_nome(grezzo) == bello
+
+
+def test_tieni_piu_veloci():
+    lenta = Corsa("10", "REG", [("A", 0), ("B", 40)])
+    veloce = Corsa("12", "REG", [("A", 0), ("B", 30)])
+    pari = Corsa("8", "REG", [("A", 0), ("B", 30)])
+    altra = Corsa("20", "RV", [("A", 0), ("C", 50)])
+    tenute = costruisci.tieni_piu_veloci([lenta, veloce, pari, altra])
+    assert sorted(c.numero for c in tenute) == ["20", "8"]
+
+
+def test_costruisci_rete_perimetro():
+    stazioni = {
+        "1": Stazione("1", "TORINO", 45.0, 7.6),
+        "2": Stazione("2", "MILANO", 45.4, 9.1),
+        "3": Stazione("3", "BERGAMO", 45.7, 9.6),
+    }
+    regione = {"1": "Piemonte", "2": "Lombardia", "3": "Lombardia"}
+    corse = [
+        Corsa("1", "RV", [("1", 0), ("2", 100)]),
+        Corsa("2", "REG", [("2", 0), ("3", 50)]),
+    ]
+    r = costruisci.costruisci_rete(
+        corse, stazioni, lambda s: regione[s.id], "Piemonte",
+        datetime.date(2026, 10, 26), MERCOLEDI, "test",
+    )
+    assert [t["numero"] for t in r["treni"]] == ["1"]
+    assert [s["nome"] for s in r["stazioni"]] == ["Milano", "Torino"]
+    assert r["meta"]["conteggi"] == {"stazioni": 2, "treni": 1}
+    assert r["treni"][0]["fermate"][1] == {"stazione": "2", "minuti_dalla_partenza": 100}
+
+
+# --- regioni -----------------------------------------------------------------
+
+def _quadrato(x0, y0, lato):
+    return [(x0, y0), (x0 + lato, y0), (x0 + lato, y0 + lato), (x0, y0 + lato), (x0, y0)]
+
+
+@pytest.fixture
+def elenco_regioni():
+    # "Alfa" è un quadrato 0..1 con un buco 0.4..0.6; "Beta" sta a destra.
+    alfa = regioni.Regione("Alfa", [[_quadrato(0, 0, 1), _quadrato(0.4, 0.4, 0.2)]])
+    beta = regioni.Regione("Beta/Bêta", [[_quadrato(1, 0, 1)]])
+    return [alfa, beta]
+
+
+def test_regione_dentro_e_buco(elenco_regioni):
+    assert regioni.regione_di(0.2, 0.2, "830000001", elenco_regioni) == "Alfa"
+    assert regioni.regione_di(0.2, 1.5, "830000001", elenco_regioni) == "Beta"
+    assert regioni.regione_di(0.5, 0.5, "830000001", elenco_regioni) == "Estero"  # nel buco, a ~11 km dal bordo
+
+
+def test_regione_costa_ed_estero(elenco_regioni):
+    assert regioni.regione_di(-0.005, 0.5, "830000001", elenco_regioni) == "Alfa"     # ~0,55 km fuori: costa
+    assert regioni.regione_di(-0.05, 0.5, "830000001", elenco_regioni) == "Estero"    # ~5,5 km fuori
+    assert regioni.regione_di(0.2, 0.2, "850000001", elenco_regioni) == "Estero"      # codice straniero
+
+
+def test_carica_regioni(tmp_path):
+    geo = {"type": "FeatureCollection", "features": [
+        {"properties": {"reg_name": "Uno"}, "geometry": {"type": "Polygon", "coordinates": [_quadrato(0, 0, 1)]}},
+        {"properties": {"reg_name": "Due"}, "geometry": {"type": "MultiPolygon", "coordinates": [[_quadrato(2, 0, 1)], [_quadrato(4, 0, 1)]]}},
+    ]}
+    percorso = tmp_path / "r.geojson"
+    percorso.write_text(json.dumps(geo), encoding="utf-8")
+    caricate = regioni.carica_regioni(percorso)
+    assert regioni.regione_di(0.5, 4.5, "83", caricate) == "Due"
+
+
+# --- rete.json -----------------------------------------------------------------
+
+def _rete(treni=None):
+    return {
+        "meta": {"tipo": rete.TIPO, "formato_versione": rete.FORMATO_VERSIONE, "data_aggiornamento": "2026-10-26"},
+        "stazioni": [
+            {"id": "1", "nome": "Àlfa", "lat": 45.0, "lon": 7.0, "regione": "Piemonte"},
+            {"id": "2", "nome": "Beta", "lat": 45.1, "lon": 7.1, "regione": "Piemonte"},
+        ],
+        "treni": treni if treni is not None else [
+            {"numero": "1", "categoria": "REG", "fermate": [
+                {"stazione": "1", "minuti_dalla_partenza": 0}, {"stazione": "2", "minuti_dalla_partenza": 10}]},
+        ],
+    }
+
+
+def test_scrivi_e_leggi(tmp_path):
+    percorso = tmp_path / "data" / "rete.json"
+    rete.scrivi_rete(percorso, _rete())
+    assert rete.leggi_rete(percorso) == _rete()
+    assert "Àlfa" in percorso.read_text(encoding="utf-8")
+
+
+def test_leggi_file_assente(tmp_path):
+    assert rete.leggi_rete(tmp_path / "manca.json") is None
+
+
+@pytest.mark.parametrize("contenuto, frammento", [
+    ("non json", "non è un file JSON"),
+    ('{"meta": {"tipo": "Altro"}}', "non è un file dati"),
+    ('{"meta": {"tipo": "Dove_Arrivo_Rete", "formato_versione": 2}}', "formato versione 2"),
+])
+def test_formato_sconosciuto(tmp_path, contenuto, frammento):
+    percorso = tmp_path / "rete.json"
+    percorso.write_text(contenuto, encoding="utf-8")
+    with pytest.raises(rete.ErroreFormato, match=frammento):
+        rete.leggi_rete(percorso)
+
+
+def test_differenze():
+    vecchia = _rete()
+    nuova = _rete(treni=[])
+    nuova["stazioni"].append({"id": "3", "nome": "Gamma", "lat": 0, "lon": 0, "regione": "Piemonte"})
+    d = rete.differenze(vecchia, nuova)
+    assert d["stazioni_nuove"] == ["Gamma"]
+    assert d["collegamenti_spariti"] == [("Àlfa", "Beta")]
+    assert (d["treni_prima"], d["treni_ora"]) == (1, 0)
+    assert rete.differenze(None, nuova) is None
+
+
+def test_contenuto_uguale_ignora_data():
+    altra = _rete()
+    altra["meta"]["data_aggiornamento"] = "2030-01-01"
+    assert rete.contenuto_uguale(_rete(), altra)
+    assert not rete.contenuto_uguale(None, altra)
+    assert not rete.contenuto_uguale(_rete(), _rete(treni=[]))
+
+
+# --- pubblicazione ---------------------------------------------------------------
+
+def test_messaggio_commit():
+    assert pubblica.messaggio_commit(datetime.date(2026, 3, 5)) == "data: aggiornamento rete 05/03/2026"
+
+
+def test_pubblica_senza_github(tmp_path):
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    file_dati = tmp_path / "docs" / "data" / "rete.json"
+    rete.scrivi_rete(file_dati, _rete())
+    riuscito, spiegazione = pubblica.pubblica(tmp_path, file_dati, datetime.date(2026, 10, 26))
+    assert not riuscito and "origin" in spiegazione
+
+
+def test_pubblica_solo_il_file_dati(tmp_path):
+    remoto = tmp_path / "remoto.git"
+    locale = tmp_path / "locale"
+    subprocess.run(["git", "init", "-q", "--bare", str(remoto)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(locale)], check=True)
+    git = lambda *a: subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *a], cwd=locale, check=True, capture_output=True)
+    (locale / "altro.txt").write_text("x")
+    git("add", "altro.txt")
+    git("commit", "-q", "-m", "inizio")
+    git("remote", "add", "origin", str(remoto))
+    git("push", "-q", "-u", "origin", "main")
+    (locale / "altro.txt").write_text("modificato, non va pubblicato")
+    file_dati = locale / "docs" / "data" / "rete.json"
+    rete.scrivi_rete(file_dati, _rete())
+
+    subprocess.run(["git", "config", "user.name", "t"], cwd=locale, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=locale, check=True)
+    riuscito, spiegazione = pubblica.pubblica(locale, file_dati, datetime.date(2026, 10, 26))
+    assert riuscito, spiegazione
+    ultimo = subprocess.run(["git", "log", "-1", "--name-only", "--format=%s", "origin/main"], cwd=locale, capture_output=True, text=True).stdout.split()
+    assert " ".join(ultimo[:4]) == "data: aggiornamento rete 26/10/2026"
+    assert ultimo[4:] == ["docs/data/rete.json"]

@@ -93,8 +93,46 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
 - Limite: contiene solo Trenitalia. Altri operatori regionali (es. Trenord su
   Novara/Domodossola, GTT, TILO) non ci sono.
 
-### Link precompilato Trenitalia: NON documentato
+### Link precompilato Trenitalia: NON esiste
 - trenitalia.com rimanda la ricerca a lefrecce.it, app a pagina singola con
   route nell'hash, es. `https://www.lefrecce.it/Channels.Website.WEB/#/?tab=biglietto`.
-- Nessun parametro partenza/arrivo documentato; non verificabile senza browser.
-  Da provare a mano (Davide fa una ricerca e copia l'URL risultante).
+- Prova di Davide (26/10/2026): dopo una ricerca l'URL è
+  `.../#/search-results?cid=...&handoff=true&referrer=...` → **nessuna stazione
+  nell'URL**. Il pulsante "Verifica prezzo" aprirà la ricerca e mostrerà
+  partenza/arrivo da copiare.
+
+## Decisioni del 26/10/2026 (Davide)
+- Fonte dati = orario Trenitalia GTFS (deryclem). ViaggiaTreno abbandonato.
+  Altri operatori (Trenord, GTT, TILO…): da valutare più avanti.
+- Categorie regionali: REG, RV, SFM (metropolitano Torino), MET (passante
+  di Napoli, linea 2). Esclusi BUS e tutte le Frecce/IC/EC/EN/EXP.
+- Le Frecce sono nel GTFS: possibile funzione futura, non prioritaria.
+
+## Scanner (dalla 0.1.0)
+- `python -m scanner` (lo lancia `Aggiorna_Dati.bat`); `--solo-scansione`
+  non chiede di pubblicare. Tutto il giro richiede ~5 s.
+- Moduli: `scarica` (download con cache in `scanner/cache/`, file `.part`,
+  3 nuovi tentativi), `gtfs` (lettura zip, giorno tipo, corse), `regioni`
+  (punto-in-poligono sui confini ISTAT), `costruisci` (perimetro, riduzione,
+  nomi), `rete` (UNICO punto di lettura/scrittura di rete.json + confronto),
+  `pubblica` (git add/commit --only/push del solo file dati).
+- Il GTFS si riscarica solo se `.last_publication_timestamp` è cambiato.
+- Giorno tipo: primo mercoledì da oggi+7 giorni, dentro la validità, non
+  festivo, fuori dal 20/12–07/01.
+- Minuti: partenza alla prima fermata, poi l'arrivo in ogni fermata
+  (A→B = arrivo B − arrivo A, include la sosta in A). Corse con orari che
+  tornano indietro: scartate e segnalate.
+- Riduzione: tra corse con identica sequenza di fermate si tiene la più
+  veloce (a parità il numero più basso). 869 corse → 214 treni, 317 stazioni.
+- Perimetro: treni con almeno una fermata in Piemonte, presi interi fino al capolinea.
+- Regione: le stazioni con codice non `83…` sono "Estero". Fuori da tutti i
+  poligoni: entro 1 km → regione più vicina (stazioni costiere, max 0,32 km),
+  oltre → "Estero" (stazioni francesi della Cuneo–Ventimiglia con codice
+  italiano: Tenda, Breil, La Brigue, Fontan, St-Dalmas, Vievola, ≥3,9 km).
+- Nomi: tutti maiuscoli nel GTFS → resi "Torino Porta Nuova", "Castello d'Annone".
+- rete.json: una stazione/un treno per riga (diff git leggibili). Campi extra
+  in meta: `giorno_tipo`, `corse_considerate`, `fonte` (attribuzioni CC-BY).
+- Nov 2026: la Ivrea–Aosta è servita solo da BUS sostitutivi → Valle d'Aosta
+  assente dalla rete (corretto, non è un errore).
+- Node 24: `node --test tests` NON funziona (lo prende come file):
+  usare `node --test "tests/**/*.test.js"`.

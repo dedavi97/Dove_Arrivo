@@ -1,0 +1,78 @@
+"""Dalle corse del giorno tipo alla rete pubblicata in rete.json."""
+import re
+
+from . import rete as formato
+
+PAROLE_MINUSCOLE = {"d", "di", "del", "della", "dei", "delle", "da", "in", "sul", "sulla", "al", "alla", "e"}
+
+
+def bel_nome(nome):
+    """'REGGIO DI CALABRIA S.CATERINA' -> 'Reggio di Calabria S.Caterina'. I nomi già misti restano come sono."""
+    if nome != nome.upper():
+        return nome
+    parti = re.split(r"([ .'\-/()])", nome.lower())
+    risultato = []
+    for i, p in enumerate(parti):
+        if p and p[0].isalpha() and not (i > 0 and p in PAROLE_MINUSCOLE):
+            p = p[0].upper() + p[1:]
+        risultato.append(p)
+    return "".join(risultato)
+
+
+def tieni_piu_veloci(corse):
+    """Tra le corse con la stessa identica sequenza di fermate tiene la più veloce.
+
+    Le ripetizioni nell'arco della giornata (stesso percorso ogni ora) non aggiungono
+    informazioni: conta solo il tempo minimo. A parità vince il numero più basso.
+    """
+    migliori = {}
+    for c in corse:
+        chiave = tuple(s for s, _ in c.fermate)
+        attuale = migliori.get(chiave)
+        if attuale is None or (c.fermate[-1][1], _numero(c)) < (attuale.fermate[-1][1], _numero(attuale)):
+            migliori[chiave] = c
+    return list(migliori.values())
+
+
+def _numero(corsa):
+    return int(corsa.numero) if corsa.numero.isdigit() else float("inf")
+
+
+def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorno_tipo, fonte):
+    """regione_di(stazione) -> nome regione."""
+    regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
+    nel_perimetro = [c for c in corse if any(regioni[s] == perimetro for s, _ in c.fermate)]
+    scelte = sorted(tieni_piu_veloci(nel_perimetro), key=lambda c: (_numero(c), c.numero))
+    usate = sorted({s for c in scelte for s, _ in c.fermate}, key=lambda i: bel_nome(stazioni[i].nome))
+
+    rete = {
+        "meta": {
+            "tipo": formato.TIPO,
+            "formato_versione": formato.FORMATO_VERSIONE,
+            "data_aggiornamento": data_aggiornamento.isoformat(),
+            "perimetro": perimetro,
+            "conteggi": {"stazioni": len(usate), "treni": len(scelte)},
+            "giorno_tipo": giorno_tipo.isoformat(),
+            "corse_considerate": len(nel_perimetro),
+            "fonte": fonte,
+        },
+        "stazioni": [
+            {
+                "id": i,
+                "nome": bel_nome(stazioni[i].nome),
+                "lat": round(stazioni[i].lat, 5),
+                "lon": round(stazioni[i].lon, 5),
+                "regione": regioni[i],
+            }
+            for i in usate
+        ],
+        "treni": [
+            {
+                "numero": c.numero,
+                "categoria": c.categoria,
+                "fermate": [{"stazione": s, "minuti_dalla_partenza": m} for s, m in c.fermate],
+            }
+            for c in scelte
+        ],
+    }
+    return rete
