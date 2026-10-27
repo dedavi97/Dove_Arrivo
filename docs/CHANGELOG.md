@@ -7,7 +7,8 @@ Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 - Percorsi alternativi: se una tratta del percorso ha pochi diretti al giorno
   (meno di 6), la scheda mostra anche "Negli altri orari": fino a 3 percorsi
   senza quei treni, che cambiano in stazioni diverse, ognuno con i suoi
-  diretti al giorno. Sulla mappa sono le linee azzurre. Esempio: Torino Porta
+  diretti al giorno. Ognuna ha il tasto "Mostra sulla mappa" per vederla in
+  azzurro quando serve (all'inizio la mappa resta pulita). Esempio: Torino Porta
   Nuova → Racconigi, 5 diretti; negli altri orari via Carmagnola (28 min di
   treno) o via Cavallermaggiore (36 min). Il tempo non conta le attese: per
   scegliere si guardano gli orari dei diretti di ogni pezzo.

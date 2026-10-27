@@ -17,6 +17,8 @@ const stato = {
   perId: new Map(),
   tracciati: new Map(),
   servite: new Set(), // stazioni servite da almeno un treno delle aziende accese
+  alternative: [], // alternative "negli altri orari" della meta aperta
+  altMostrate: new Set(), // indici delle alternative accese sulla mappa (col tasto nella scheda)
   origine: null,
   meta: null,
   mete: new Map(),
@@ -471,25 +473,38 @@ function percorsoQuandoManca(etichetta, meta) {
     rare, maxCambi, stato.maxOre * 60);
 }
 
-function htmlAlternativa(alternative) {
-  const intro = `<h3><span class="linea-alternativa" aria-hidden="true"></span> Negli altri orari</h3>`;
-  if (!alternative.length) {
+// Sezione "Negli altri orari": ogni alternativa è una scheda con titolo (via, tempo, cambi),
+// tasto "Mostra sulla mappa" (spenti all'inizio: la mappa resta pulita) e treni a scomparsa.
+function htmlAlternativa(alternative, mostrate) {
+  const n = alternative.length;
+  const intro = `<h3><span class="linea-alternativa" aria-hidden="true"></span> Negli altri orari` +
+    (n > 1 ? ` · ${n} alternative` : "") + `</h3>`;
+  if (!n) {
     return `<section class="alternativa">${intro}<p class="nota">Quando il treno con poche corse non c'è: ` +
       `nessuna alternativa entro i limiti di cambi e ore, prova ad aumentarli.</p></section>`;
   }
   const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
   const blocchi = alternative.map((alt, k) => {
     const via = stazioniCambio(stato.rete, alt).map(nome).join(", ");
-    const titolo = `Via ${via} · <strong>${formattaDurata(alt.minuti)}</strong> ${testoCambi(alt.tratte.length - 1)}`;
-    return `<details class="opzione"${k === 0 ? " open" : ""}><summary>${titolo}</summary>${htmlTratte(alt)}</details>`;
+    const acceso = mostrate.has(k);
+    return `<div class="opzione">` +
+      `<div class="opzione-testa"><span>${n > 1 ? `${k + 1}. ` : ""}Via ${via} · <strong>${formattaDurata(alt.minuti)}</strong> ` +
+      `${testoCambi(alt.tratte.length - 1)}</span>` +
+      `<button type="button" class="bottone piccolo" data-alternativa="${k}" aria-pressed="${acceso}">` +
+      `${acceso ? "Nascondi dalla mappa" : "Mostra sulla mappa"}</button></div>` +
+      `<details><summary>Treni e diretti al giorno</summary>${htmlTratte(alt)}</details></div>`;
   });
-  const nota = alternative.length > 1
-    ? `Quando il treno con poche corse non c'è. Il tempo non conta le attese ai cambi: guarda gli orari dei diretti di ogni pezzo per scegliere.`
-    : `Quando il treno con poche corse non c'è:`;
+  const nota = `Quando il treno con poche corse non c'è.` +
+    (n > 1 ? ` Il tempo non conta le attese ai cambi: guarda i diretti di ogni pezzo per scegliere.` : "");
   return `<section class="alternativa">${intro}<p class="nota">${nota}</p>${blocchi.join("")}</section>`;
 }
 
+function alternativeMostrate() {
+  return stato.alternative.filter((_, k) => stato.altMostrate.has(k));
+}
+
 function mostraScheda(id) {
+  if (stato.meta !== id) stato.altMostrate = new Set(); // altra meta: alternative spente
   stato.meta = id;
   const rete = stato.rete;
   const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
@@ -511,12 +526,14 @@ function mostraScheda(id) {
       `<div class="azioni">${partiDaQui}</div>`;
   } else {
     alternativa = percorsoQuandoManca(etichetta, id);
+    stato.alternative = alternativa || [];
+    for (const k of [...stato.altMostrate]) if (k >= stato.alternative.length) stato.altMostrate.delete(k);
     const conTrenord = [...etichetta.tratte, ...(alternativa || []).flatMap((a) => a.tratte)]
       .some((t) => rete.treni[t.treno].operatore === "Trenord");
     corpo.innerHTML = comune +
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
       htmlTratte(etichetta) +
-      (alternativa === undefined ? "" : htmlAlternativa(alternativa)) +
+      (alternativa === undefined ? "" : htmlAlternativa(alternativa, stato.altMostrate)) +
       `<div class="azioni">` +
       `<a class="bottone primario" href="${URL_TRENITALIA}" target="_blank" rel="noopener">Verifica prezzo</a>` +
       (conTrenord ? `<a class="bottone" href="${URL_TRENORD}" target="_blank" rel="noopener">Sito Trenord</a>` : "") +
@@ -527,14 +544,25 @@ function mostraScheda(id) {
       `Il tempo conta solo i minuti sui treni, senza le attese ai cambi.</p>`;
   }
   corpo.querySelector('[data-azione="parti"]').addEventListener("click", () => impostaOrigine(id));
+  corpo.querySelectorAll("[data-alternativa]").forEach((tasto) => tasto.addEventListener("click", () => {
+    const k = Number(tasto.dataset.alternativa);
+    stato.altMostrate.has(k) ? stato.altMostrate.delete(k) : stato.altMostrate.add(k);
+    const acceso = stato.altMostrate.has(k);
+    tasto.setAttribute("aria-pressed", String(acceso));
+    tasto.textContent = acceso ? "Nascondi dalla mappa" : "Mostra sulla mappa";
+    disegnaPercorso(etichetta, alternativeMostrate());
+  }));
   document.getElementById("scheda").hidden = false;
   document.getElementById("suggerimento").hidden = true; // con la scheda aperta non serve e coprirebbe la mappa
   colora();
-  disegnaPercorso(etichetta, alternativa);
+  if (!etichetta) stato.alternative = [];
+  disegnaPercorso(etichetta, alternativeMostrate());
 }
 
 function chiudiScheda() {
   stato.meta = null;
+  stato.alternative = [];
+  stato.altMostrate = new Set();
   document.getElementById("scheda").hidden = true;
   if (stratoPercorso) disegnaPercorso(null);
   if (mappa) colora();

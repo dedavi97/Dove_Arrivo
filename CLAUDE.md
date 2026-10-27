@@ -435,6 +435,10 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   percorso e alternative), `htmlAlternativa()` (sezione "Negli altri orari":
   una `<details>` per alternativa, "Via X · tempo · cambi", la prima aperta;
   oppure "nessuna alternativa entro i limiti").
+- Le alternative NON si disegnano da sole (richiesta di Davide: mappa troppo
+  caotica): ogni riquadro ha il tasto "Mostra sulla mappa" (`data-alternativa`,
+  `aria-pressed`); `stato.alternative` e `stato.altMostrate` (indici accesi),
+  azzerati cambiando meta o chiudendo la scheda; `alternativeMostrate()`.
 - Mappa: alternativa in `--alternativa` (#5fd4e8) disegnata SOPRA il
   percorso, più sottile (spesso corre sugli stessi binari: sotto non si
   vedeva); anelli dei suoi cambi azzurri; voce "altri orari" in legenda.
