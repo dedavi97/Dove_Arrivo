@@ -393,6 +393,22 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
 - La "V" ad Arezzo (Firenze→Arezzo + Arezzo→Foligno) è vera: la linea lenta
   dal Valdarno entra ad Arezzo da sud-ovest (Ponticino).
 
+## Filtro aziende e ore (dalla 0.9.0)
+- `ORE_MAX = 12` in app.js e `max="12"` del cursore in index.html (test).
+  3 cambi e 12 h da Milano/Roma: ≈8–9 ms, ~1600–1850 mete.
+- `stato.imp.spente` = aziende spente (in localStorage con le impostazioni,
+  ripulito se un'azienda non c'è più; mai tutte spente). `applicaAziende()`
+  ricostruisce `creaIndice(rete, ammesso)` (i treni esclusi non entrano
+  nell'indice, gli indici t restano quelli di rete.treni), `stato.servite`
+  (stazioni servite dalle aziende accese) e le linee della rete; se la
+  partenza resta senza treni viene tolta. `visibileOra(s)` = servita +
+  sopra soglia abitanti: usata da mappa, mete, conteggio, ricerca.
+- Caselle generate da `meta.fonti` in `#imp-aziende` (nascosto se c'è una
+  sola azienda); l'ultima accesa è disabilitata.
+- Pagina di prova: con il file dati da 2,5 MB aspettare ~3,5 s dopo il load
+  dell'iframe prima di simulare tocchi (con 1,5 s la ricerca/filtro partiva
+  prima che la rete fosse caricata).
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

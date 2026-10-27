@@ -168,3 +168,22 @@ test("lineaFermate: segue i tracciati nei due versi, dritta dove mancano", () =>
   assert.deepStrictEqual(lineaFermate(["C"], c, tracciati), [[0, 20]]);
   assert.strictEqual(indiceTracciati({}).size, 0);
 });
+
+test("filtro aziende: treni ammessi e stazioni servite", () => {
+  const { aziendaAmmessa, stazioniServite, ORE_MAX } = require("../docs/app.js");
+  const f = (...ids) => ids.map((stazione) => ({ stazione, minuti_dalla_partenza: 0 }));
+  const rete = {
+    treni: [
+      { operatore: "Trenitalia", fermate: f("A", "B") },
+      { operatore: "Trenord", fermate: f("B", "C") },
+      { fermate: f("D", "E") }, // dati vecchi senza operatore: sempre ammesso
+    ],
+  };
+  assert.ok(aziendaAmmessa(rete.treni[0], ["Trenord"]));
+  assert.ok(!aziendaAmmessa(rete.treni[1], ["Trenord"]));
+  assert.ok(aziendaAmmessa(rete.treni[2], ["Trenord", "Trenitalia"]));
+  assert.deepStrictEqual([...stazioniServite(rete, (t) => aziendaAmmessa(t, ["Trenord"]))].sort(), ["A", "B", "D", "E"]);
+  assert.strictEqual(ORE_MAX, 12);
+  const html = fs.readFileSync(path.join(RADICE, "docs", "index.html"), "utf8");
+  assert.match(html, /id="ore" type="range" min="0.5" max="12"/, "il cursore arriva a ORE_MAX");
+});

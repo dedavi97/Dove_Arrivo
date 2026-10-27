@@ -175,3 +175,10 @@ test("rete reale: Torino Porta Nuova → Racconigi, 5 diretti (06:41, 07:20, 17:
   assert.deepStrictEqual(diretti.orari.map(P.formattaOrario), ["06:41", "07:20", "17:55", "18:55", "19:55"]);
   assert.ok(diretti.orari.length < P.SOGLIA_TRATTA_RARA);
 });
+
+test("creaIndice con filtro: i treni esclusi non si usano, gli indici restano", () => {
+  const ind = P.creaIndice(RETE, (t) => t.numero !== "2"); // senza il RV veloce A→C
+  const mete = P.calcolaMete(ind, "A", 0, 600);
+  assert.strictEqual(mete.get("C").minuti, 50);              // solo col REG 1
+  assert.strictEqual(mete.get("C").tratte[0].treno, 0);      // indice di rete.treni
+});

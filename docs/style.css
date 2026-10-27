@@ -366,3 +366,7 @@ body {
 /* --- impostazioni --- */
 .scelta { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; cursor: pointer; }
 .scelta input { margin-top: 3px; accent-color: var(--accento); }
+.aziende { margin: 18px 0 0; padding: 4px 12px 0; border: 1px solid var(--bordo); border-radius: 8px; }
+.aziende[hidden] { display: none; }
+.aziende legend { padding: 0 6px; color: var(--testo-tenue); font-size: 13px; }
+.aziende .scelta { margin: 10px 0; }

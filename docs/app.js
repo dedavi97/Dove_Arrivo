@@ -6,6 +6,7 @@ const URL_TRENITALIA = "https://www.lefrecce.it/Channels.Website.WEB/";
 const URL_TRENORD = "https://www.trenord.it/";
 const CHIAVE_MEMORIA = "dove_arrivo_stato";
 const CENTRO_INIZIALE = [45.05, 7.9];
+const ORE_MAX = 12; // fondo scala del cursore "Ore max" (anche in index.html)
 // Gradini del cursore "abitanti min": irregolari, così anche le soglie piccole si scelgono bene.
 const SOGLIE_ABITANTI = [0, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 250000, 500000];
 const ZOOM_INIZIALE = 8;
@@ -15,13 +16,14 @@ const stato = {
   indice: null,
   perId: new Map(),
   tracciati: new Map(),
+  servite: new Set(), // stazioni servite da almeno un treno delle aziende accese
   origine: null,
   meta: null,
   mete: new Map(),
   maxCambi: 1,
   maxOre: 2,
   soglia: 0, // indice in SOGLIE_ABITANTI
-  imp: { ricorda: true, linee: true },
+  imp: { ricorda: true, linee: true, spente: [] }, // spente = aziende da non mostrare né usare
 };
 let mappa = null;
 const pallini = new Map();
@@ -118,6 +120,17 @@ function htmlFonti(meta) {
   return `<ul class="fonti">${righe.join("")}</ul><p class="attribuzioni">${escapeHtml(meta.fonte || "")}</p>`;
 }
 
+// Filtro aziende: un treno senza operatore (dati vecchi) è sempre ammesso.
+function aziendaAmmessa(treno, spente) {
+  return !treno.operatore || !spente.includes(treno.operatore);
+}
+
+function stazioniServite(rete, ammesso) {
+  const servite = new Set();
+  for (const treno of rete.treni) if (ammesso(treno)) for (const f of treno.fermate) servite.add(f.stazione);
+  return servite;
+}
+
 function testoCambi(n) {
   return n === 0 ? "diretto" : n === 1 ? "1 cambio" : `${n} cambi`;
 }
@@ -176,9 +189,32 @@ function coordinate(id) {
   return [s.lat, s.lon];
 }
 
+function lineeRete() {
+  const treni = stato.rete.treni.filter((t) => aziendaAmmessa(t, stato.imp.spente));
+  return segmentiUnici({ treni }).map(([a, b]) => lineaFermate([a, b], coordinate, stato.tracciati));
+}
+
+// Ricostruisce indice, stazioni servite e linee dopo un cambio del filtro aziende.
+function applicaAziende() {
+  const ammesso = (t) => aziendaAmmessa(t, stato.imp.spente);
+  stato.indice = creaIndice(stato.rete, ammesso);
+  stato.servite = stazioniServite(stato.rete, ammesso);
+  if (stratoLinee) stratoLinee.setLatLngs(lineeRete());
+  if (stato.origine && !stato.servite.has(stato.origine)) {
+    stato.origine = null; // la partenza era servita solo dalle aziende spente
+    chiudiScheda();
+    aggiornaRicerca();
+  }
+}
+
+// Visibile = servita dalle aziende accese e sopra la soglia di abitanti (vedi stazioneVisibile).
+function visibileOra(stazione, origine = stato.origine) {
+  return stato.servite.has(stazione.id) && stazioneVisibile(stazione, SOGLIE_ABITANTI[stato.soglia], origine);
+}
+
 function disegnaRete() {
   const rete = stato.rete;
-  stratoLinee = L.polyline(segmentiUnici(rete).map(([a, b]) => lineaFermate([a, b], coordinate, stato.tracciati)), {
+  stratoLinee = L.polyline(lineeRete(), {
     pane: "linee",
     renderer: L.canvas({ pane: "linee" }),
     color: colore("--linea"),
@@ -208,10 +244,9 @@ function disegnaRete() {
 function colora() {
   const r = raggioStazione(mappa.getZoom());
   const sfondo = colore("--sfondo");
-  const minimo = SOGLIE_ABITANTI[stato.soglia];
   for (const [id, pallino] of pallini) {
     const s = stato.perId.get(id);
-    if (!stazioneVisibile(s, minimo, stato.origine)) {
+    if (!visibileOra(s)) {
       if (mappa.hasLayer(pallino)) pallino.remove();
       continue;
     }
@@ -302,8 +337,8 @@ function ricalcola() {
     : new Map();
   colora();
   aggiornaSuggerimento();
-  if (stato.meta && !stazioneVisibile(stato.perId.get(stato.meta), SOGLIE_ABITANTI[stato.soglia], stato.origine)) {
-    chiudiScheda(); // la meta aperta è sparita col filtro abitanti
+  if (stato.meta && !visibileOra(stato.perId.get(stato.meta))) {
+    chiudiScheda(); // la meta aperta è sparita col filtro abitanti o aziende
   } else if (stato.meta) {
     mostraScheda(stato.meta);
   }
@@ -311,9 +346,8 @@ function ricalcola() {
 }
 
 function meteVisibili() {
-  const minimo = SOGLIE_ABITANTI[stato.soglia];
   let n = 0;
-  for (const id of stato.mete.keys()) if (stazioneVisibile(stato.perId.get(id), minimo, stato.origine)) n++;
+  for (const id of stato.mete.keys()) if (visibileOra(stato.perId.get(id))) n++;
   return n;
 }
 
@@ -473,8 +507,7 @@ function preparaRicerca() {
 
   campo.addEventListener("focus", () => campo.select());
   campo.addEventListener("input", () => {
-    const minimo = SOGLIE_ABITANTI[stato.soglia];
-    trovate = cercaStazioni(stato.rete.stazioni.filter((s) => stazioneVisibile(s, minimo, null)), campo.value);
+    trovate = cercaStazioni(stato.rete.stazioni.filter((s) => visibileOra(s, null)), campo.value);
     attiva = 0;
     campo.value.trim() ? disegna() : chiudi();
   });
@@ -557,6 +590,29 @@ function preparaImpostazioni() {
   });
 }
 
+// Caselle "Aziende" nelle impostazioni, una per fonte dei dati. Almeno una resta accesa.
+function preparaAziende() {
+  const fonti = (stato.rete.meta.fonti || []).map((f) => f.nome);
+  const box = document.getElementById("imp-aziende");
+  if (fonti.length < 2) return; // con una sola azienda non c'è niente da scegliere
+  box.hidden = false;
+  box.insertAdjacentHTML("beforeend", fonti.map((nome) =>
+    `<label class="scelta"><input type="checkbox" value="${escapeHtml(nome)}"${stato.imp.spente.includes(nome) ? "" : " checked"}>` +
+    `<span>${escapeHtml(nome)}</span></label>`).join(""));
+  const caselle = [...box.querySelectorAll("input")];
+  const aggiornaBlocchi = () => {
+    const accese = caselle.filter((c) => c.checked);
+    caselle.forEach((c) => { c.disabled = accese.length === 1 && c.checked; });
+  };
+  caselle.forEach((casella) => casella.addEventListener("change", () => {
+    stato.imp.spente = caselle.filter((c) => !c.checked).map((c) => c.value);
+    aggiornaBlocchi();
+    applicaAziende();
+    ricalcola();
+  }));
+  aggiornaBlocchi();
+}
+
 // ---------------------------------------------------------------- finestre
 
 let novitaCaricate = false;
@@ -610,9 +666,10 @@ async function avvia() {
   const dataDati = document.getElementById("data-dati");
   const memoria = leggiMemoria();
   Object.assign(stato.imp, memoria.imp || {});
+  if (!Array.isArray(stato.imp.spente)) stato.imp.spente = [];
   if (stato.imp.ricorda) {
     if ([0, 1, 2, 3].includes(memoria.maxCambi)) stato.maxCambi = memoria.maxCambi;
-    if (typeof memoria.maxOre === "number" && memoria.maxOre >= 0.5 && memoria.maxOre <= 6) stato.maxOre = memoria.maxOre;
+    if (typeof memoria.maxOre === "number" && memoria.maxOre >= 0.5 && memoria.maxOre <= ORE_MAX) stato.maxOre = memoria.maxOre;
     if (Number.isInteger(memoria.soglia) && memoria.soglia >= 0 && memoria.soglia < SOGLIE_ABITANTI.length) stato.soglia = memoria.soglia;
   }
   preparaFinestre();
@@ -643,12 +700,16 @@ async function avvia() {
     return;
   }
   stato.rete = rete;
-  stato.indice = creaIndice(rete);
   stato.perId = new Map(rete.stazioni.map((s) => [s.id, s]));
   stato.tracciati = indiceTracciati(rete);
-  if (stato.imp.ricorda && stato.perId.has(memoria.origine)) stato.origine = memoria.origine;
+  const aziende = (rete.meta.fonti || []).map((f) => f.nome);
+  stato.imp.spente = stato.imp.spente.filter((nome) => aziende.includes(nome));
+  if (stato.imp.spente.length >= aziende.length) stato.imp.spente = []; // mai tutte spente
+  applicaAziende();
+  if (stato.imp.ricorda && stato.servite.has(memoria.origine)) stato.origine = memoria.origine;
 
   disegnaRete();
+  preparaAziende();
   preparaRicerca();
   preparaCursori();
   aggiornaRicerca();
@@ -661,6 +722,6 @@ if (typeof document !== "undefined") {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    changelogInHtml, escapeHtml, raggioStazione, htmlDiretti, htmlFonti, fonteDi, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
+    changelogInHtml, escapeHtml, raggioStazione, aziendaAmmessa, stazioniServite, ORE_MAX, htmlDiretti, htmlFonti, fonteDi, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
   };
 }

@@ -1,20 +1,20 @@
 # Stato del progetto
 
-**Versione:** 0.8.1 — 27/10/2026
+**Versione:** 0.9.0 — 27/10/2026
 **Ultima tappa:** linee che seguono i binari
-**Prossimo passo:** da scegliere con Davide nel backlog (ore max 12, filtro aziende, percorsi alternativi, pulsante prezzo)
+**Prossimo passo:** da scegliere con Davide nel backlog (provenienza del treno, percorsi alternativi, pulsante prezzo)
 
 ## Cosa funziona
 - **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 2103
   stazioni e 2425 treni regionali (Trenitalia 2082, Trenord 343). Scegli la
   partenza toccando una stazione o cercandola per nome; cursori per cambi
-  (0–3), ore (30 min – 6 h) e abitanti minimi del comune. Mete colorate per
+  (0–3), ore (30 min – 12 h) e abitanti minimi del comune. Mete colorate per
   tempo, legenda sempre visibile.
 - Toccando una meta: comune e abitanti, treni con il loro operatore, cambi,
   tempo totale, dove prosegue ogni treno, quanti diretti al giorno su ogni
   tratta e a che ora (⚠ se meno di 6); percorso evidenziato, cambi con anello
   viola; "Verifica prezzo" (Trenitalia), "Sito Trenord" se serve, "Parti da qui".
-- Impostazioni, Aiuto, Informazioni (fonti con le date di validità).
+- Impostazioni (anche quali aziende usare), Aiuto, Informazioni (fonti con le date di validità).
 - `Aggiorna_Dati.bat` aggiorna i dati da entrambe le aziende in ~12 secondi;
   il riepilogo è diviso per fonte e segnala orari scaduti o in scadenza.
 - Le linee seguono i binari (tracciato Trenitalia); quelle Trenord sono dritte.

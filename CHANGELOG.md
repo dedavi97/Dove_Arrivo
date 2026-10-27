@@ -3,6 +3,12 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.9.0 — 27/10/2026
+- Il cursore "Ore max" arriva fino a 12 ore.
+- Impostazioni: si può scegliere quali aziende usare (Trenitalia, Trenord).
+  Le stazioni servite solo dalle aziende spente spariscono e i percorsi
+  usano solo i treni delle aziende accese. Almeno una resta sempre accesa.
+
 ## 0.8.1 — 27/10/2026
 - Dopo un aggiornamento il browser poteva mescolare file vecchi e nuovi del
   sito e mostrare una mappa vuota: ora i file portano il numero di versione

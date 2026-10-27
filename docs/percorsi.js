@@ -4,9 +4,12 @@
 // Si va solo avanti lungo le fermate di un treno; il tempo è la somma dei
 // minuti passati sui treni (attese ai cambi escluse).
 
-function creaIndice(rete) {
+// ammesso(treno) permette di escludere dei treni (es. le aziende spente nelle impostazioni):
+// gli esclusi non entrano nell'indice, ma gli indici t restano quelli di rete.treni.
+function creaIndice(rete, ammesso = () => true) {
   const passaggi = new Map(); // id stazione -> [{ t: indice treno, i: indice fermata }]
   rete.treni.forEach((treno, t) => {
+    if (!ammesso(treno)) return;
     treno.fermate.forEach((f, i) => {
       if (!passaggi.has(f.stazione)) passaggi.set(f.stazione, []);
       passaggi.get(f.stazione).push({ t, i });

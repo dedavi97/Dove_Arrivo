@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
         integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="style.css?v=0.8.1">
+  <link rel="stylesheet" href="style.css?v=0.9.0">
 </head>
 <body>
   <header class="testata">
@@ -31,7 +31,7 @@
       </label>
       <label class="cursore">
         <span class="cursore-etichetta">Ore max <output id="val-ore" for="ore">2 h</output></span>
-        <input id="ore" type="range" min="0.5" max="6" step="0.5" value="2">
+        <input id="ore" type="range" min="0.5" max="12" step="0.5" value="2">
       </label>
       <label class="cursore">
         <span class="cursore-etichetta">Abitanti min <output id="val-abitanti" for="abitanti">tutti</output></span>
@@ -86,6 +86,9 @@
         <input type="checkbox" id="imp-linee" checked>
         <span>Mostra le linee di tutta la rete</span>
       </label>
+      <fieldset id="imp-aziende" class="aziende" hidden>
+        <legend>Aziende da mostrare e usare per i percorsi</legend>
+      </fieldset>
     </div>
   </dialog>
 
@@ -97,7 +100,7 @@
     <div class="finestra-corpo">
       <h3>Come si usa</h3>
       <p><strong>1. Scegli la partenza:</strong> tocca una stazione sulla mappa oppure scrivine il nome nella casella in alto.</p>
-      <p><strong>2. Imposta i limiti:</strong> quanti cambi al massimo e quante ore al massimo di viaggio.
+      <p><strong>2. Imposta i limiti:</strong> quanti cambi al massimo e quante ore al massimo di viaggio (fino a 12).
         Con "Abitanti min" restano solo le stazioni dei comuni più grandi: le altre spariscono
         (i treni ci passano comunque e ci si può cambiare).</p>
       <p><strong>3. Guarda dove arrivi:</strong> le stazioni si colorano in verde (meno di 1 ora), giallo (1–2 ore)
@@ -113,6 +116,8 @@
         <strong>Trenord</strong> (Lombardia, Malpensa Express, linee verso la Svizzera).
         Mancano quelli di altre aziende: per esempio Trenitalia Tper (Emilia-Romagna) e le
         ferrovie locali. Se una zona sembra scollegata, può dipendere da questo.</p>
+      <p>Nelle Impostazioni puoi scegliere quali aziende usare: le stazioni servite solo
+        dalle altre spariscono e i percorsi usano solo i loro treni.</p>
       <p>Nella scheda di ogni treno c'è scritto chi lo gestisce. Se l'orario di un'azienda
         è scaduto e quello nuovo non è ancora uscito, i suoi treni restano con i dati vecchi
         e la scheda lo segnala.</p>
@@ -138,9 +143,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
           integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="versione.js?v=0.8.1"></script>
-  <script src="rete.js?v=0.8.1"></script>
-  <script src="percorsi.js?v=0.8.1"></script>
-  <script src="app.js?v=0.8.1"></script>
+  <script src="versione.js?v=0.9.0"></script>
+  <script src="rete.js?v=0.9.0"></script>
+  <script src="percorsi.js?v=0.9.0"></script>
+  <script src="app.js?v=0.9.0"></script>
 </body>
 </html>

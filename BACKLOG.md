@@ -18,9 +18,10 @@
   (2) solo in locale, con Avvia_Locale.bat che fa da ponte sul suo PC.
 - [x] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
 - [x] 0.8.1 Versione nei nomi dei file del sito + server locale senza cache
-- [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
-- [ ] Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
-  (es. solo Trenitalia, solo Trenord, entrambe). Richiesta di Davide 27/10/2026.
+- [x] 0.9.0 Cursore "Ore max" fino a 12 ore
+- [x] 0.9.0 Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
+- [ ] Provenienza del treno: nella scheda (e sulla mappa) le stazioni da cui
+  arriva il treno prima di quella in cui si sale. Richiesta di Davide 27/10/2026.
 - [ ] Percorsi alternativi quando il diretto ha poche corse (es. Torino →
   Racconigi, 5 diretti: mostrare anche le soluzioni con cambio che coprono le
   altre ore). Forse si risolve col filtro fascia oraria: da valutare insieme.
