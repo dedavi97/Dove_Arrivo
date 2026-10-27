@@ -329,6 +329,41 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   "prosegue"; avviso ⚠ per i treni di fonti scadute; pulsante "Sito Trenord"
   (https://www.trenord.it/) se il viaggio usa Trenord.
 
+## Indagine prezzi (27/10/2026, solo report — nessun codice nell'app)
+- `app.lefrecce.it/Channels.AppApi/...` (vecchia API dell'app) → 302 verso una
+  pagina di cortesia: dismessa.
+- API del sito Le Frecce, **risponde dal PC senza blocchi anti-bot** (richieste
+  con User-Agent onesto "Dove_Arrivo-indagine", 1 ogni 2 s):
+  - `GET https://www.lefrecce.it/Channels.Website.BFF.WEB/website/locations/search?name=<testo>&limit=5`
+    → `[{id, name, displayName, multistation, centroidId}]`. **id = codice
+    stazione del GTFS Trenitalia** (Torino Porta Nuova 830000219). Trova anche
+    stazioni Trenord/FN (es. Milano Cadorna).
+  - `POST .../website/ticket/solutions` con JSON `{departureLocationId,
+    arrivalLocationId, departureTime:"AAAA-MM-GGTHH:MM:00.000", adults:1,
+    children:0, criteria:{frecceOnly:false, regionalOnly:true,
+    intercityOnly:false, tourismOnly:false, noChanges:false,
+    order:"DEPARTURE_DATE", offset:0, limit:10}, advancedSearchRequest:{bestFare:false,
+    bikeFilter:false, forwardDiscountCodes:[]}}` → `solutions[].solution`
+    con `trains[]` (acronym, name), `nodes[]` (tratte, `bdoOrigin` "S00219"),
+    `price.amount` = **prezzo del biglietto unico per tutto il viaggio**
+    (2ª classe "ORDINARIA"), `status` "SALEABLE". Niente km nella risposta.
+- Vende anche viaggi su treni Trenord (Milano Cadorna→Como Lago 5,40 €,
+  Milano Centrale→Bergamo 6,30 €) e viaggi tra regioni.
+- Il prezzo dipende dal percorso: stessa coppia, percorsi diversi → prezzi
+  diversi (Torino→Racconigi 5,10 diretto / 6,50 altro giro; il 04/11 un giro
+  via Milano per Asti 21,55 €).
+- Piemonte, 25/11/2026, diretto, km misurati lungo shapes.txt Trenitalia:
+  7,7 e 12,6 km → 2,80 · 24,5–29,6 → 4,40 · 31–33 → 4,70 · 37 → 5,10 ·
+  50–54 → 6,50 · 61–63 → 7,10 · 82 (Vercelli) → 7,80 · 83–91 (Bardonecchia,
+  Cuneo, Domodossola) → 8,60 · 86 (Alessandria) → 9,60 · 104 (Novara) → 10,70.
+  Fasce coerenti, ma i km dallo shape sono imprecisi (punti ogni ~5 km:
+  sottostima sulle linee di montagna; Alessandria e Bardonecchia invertite).
+  Servirebbero i km tariffari ufficiali.
+- Tra regioni il prezzo non segue la tabella piemontese: Torino→Milano 12,90,
+  Torino→Genova 14,65, Alessandria→Genova 8,40 (68 km), Novara→Milano 6,30.
+  (Il km Torino→Milano da shape è uscito 242: abbinamento al tracciato sbagliato.)
+- Dati grezzi dell'indagine: nello scratchpad della sessione, non nel repo.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da
