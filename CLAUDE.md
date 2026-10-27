@@ -246,6 +246,48 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   mostrare la mappa più rimpicciolita (la finestra headless cambia misura dopo
   il caricamento): per foto affidabili usare sempre l'iframe a misura fissa.
 
+## Trenord — indagine 0.7.0 (27/10/2026, prima del codice)
+- Fonte: Regione Lombardia, dataset "Orario Ferroviario Regionale Gtfs"
+  (id 3z4k-mxz9). Download dal PC OK (302 → 200, `trenord_gtfs.zip`, 1,66 MB):
+  `https://www.dati.lombardia.it/download/3z4k-mxz9/application%2Fzip`.
+- Licenza **CC-BY 4.0**, attribuzione "Trenord" (da
+  `https://www.dati.lombardia.it/api/views/3z4k-mxz9.json`: `license`,
+  `attribution`). Descrizione: "Servizio Trenord e Malpensa Express".
+- Data di pubblicazione: nello zip `feed_info.txt` NON ha date né versione.
+  Indicatori utili: `viewLastModified` dell'API (24/10/2026; la voce
+  "Data ultima modifica" nei metadati), header `ETag` del download, data dei
+  file nello zip (03/08/2026). Per riscaricare solo se cambia: confrontare
+  l'ETag (o viewLastModified).
+- File: agency, stops, routes, trips, stop_times, calendar_dates, feed_info.
+  **Niente calendar.txt** (solo calendar_dates, exception_type 1) e **niente
+  shapes.txt**. stops senza location_type né parent_station; `stop_id` tipo
+  `S00023` (nessuno stop_code).
+- Validità (calendar_dates): 26/07/2026 → 12/12/2026. Dei 4 mercoledì tipo
+  coperti solo 04/11 e 25/11 (2891 corse ciascuno, di cui 2482 treni il
+  04/11). **Scade col cambio orario del 13/12/2026.**
+- routes: 63, `route_type` 2 = treno (60), 3 = bus (3: `TN_Bus` sostitutivi,
+  e al 27/10 anche `R23` Domodossola–Arona–Gallarate–Milano e `RE_4`
+  Domodossola–Milano, segnate come bus). Trip treno 6745 (bus 1725), 595
+  sequenze di fermate distinte nell'intero file. Ci sono Malpensa Express
+  (RE51, RE54), le linee ex Ferrovienord (S3, S4, R16 Asso, R17, R22, RE1
+  Laveno, RE7, R27 Novara–Saronno, R3/RE3/S31/R9 Brescia–Iseo–Edolo) e TILO
+  verso la Svizzera (S10, S30, S40, S50, RE80).
+- Stazioni usate dai treni: 494.
+  - Codice: `S` + 5 cifre ↔ Trenitalia `8300` + 5 cifre. 96 coincidenze, ma
+    il codice NON basta: le svizzere collidono con stazioni italiane diverse
+    (S05301 Lugano Paradiso ↔ Buttapietra 174 km, S05302 Melide, S05417
+    Minusio) → accettare l'abbinamento per codice solo se distanza < 300 m.
+    Buone per codice e < 300 m: 92 (quasi tutte già nella rete).
+  - Nome + distanza < 300 m: 6 (Novara Nord↔Novara 106 m, Milano Porta
+    Garibaldi Passante↔Milano Porta Garibaldi 68 m, Rovato Fn↔Rovato 122 m,
+    Bellinzona, Lugano, Brescia S09999).
+  - Da tabella manuale (stessa stazione, coordinate a ~1 km): Andora (991 m),
+    Viareggio (987 m) — treni stagionali "del mare". Milano Repubblica ↔
+    Milano Centrale (831 m) sono stazioni DIVERSE.
+  - Nuove (> 1 km da ogni stazione Trenitalia): 393 (Lombardia 353, estero
+    27, Emilia-Romagna 9, Piemonte 3, Liguria 1) + Milano Repubblica.
+- Nessun numero treno in comune con le corse Trenitalia del 04/11: niente doppioni.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da
