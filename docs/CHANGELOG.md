@@ -3,6 +3,11 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.9.1 — 27/10/2026
+- Provenienza del treno: nella scheda c'è scritto da dove arriva ogni treno
+  prima della stazione in cui si sale ("arriva da Torino Porta Nuova (2
+  fermate prima)" oppure "parte da qui"); sulla mappa quel pezzo è a puntini.
+
 ## 0.9.0 — 27/10/2026
 - Il cursore "Ore max" arriva fino a 12 ore.
 - Impostazioni: si può scegliere quali aziende usare (Trenitalia, Trenord).

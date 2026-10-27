@@ -409,6 +409,15 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   dell'iframe prima di simulare tocchi (con 1,5 s la ricerca/filtro partiva
   prima che la rete fosse caricata).
 
+## Provenienza del treno (dalla 0.9.1)
+- `provenienzaTratta(rete, tratta)` in percorsi.js = fermate prima di `da`.
+  Scheda: "arriva da X (N fermate prima)" / "parte da qui" nella riga
+  dell'operatore; mappa: linea a puntini (`dashArray "1 6"`, opacità 0,45)
+  dalla prima fermata a quella in cui si sale.
+- Attenzione: il treno mostrato è il più veloce della sua sequenza di fermate.
+  Se un treno ha varianti (es. RV 2115 che nei giorni di lavori parte da Asti
+  invece che da Torino) la provenienza è quella della variante usata.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

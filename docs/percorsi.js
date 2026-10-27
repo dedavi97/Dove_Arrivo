@@ -77,6 +77,11 @@ function restoTratta(rete, tratta) {
   return rete.treni[tratta.treno].fermate.slice(tratta.a + 1).map((f) => f.stazione);
 }
 
+// Fermate del treno prima di quella in cui si sale (id stazione), per la "provenienza".
+function provenienzaTratta(rete, tratta) {
+  return rete.treni[tratta.treno].fermate.slice(0, tratta.da).map((f) => f.stazione);
+}
+
 // Fermate percorse in una tratta, meta inclusa (id stazione).
 function fermateTratta(rete, tratta) {
   return rete.treni[tratta.treno].fermate.slice(tratta.da, tratta.a + 1).map((f) => f.stazione);
@@ -144,7 +149,7 @@ function formattaDurata(minuti) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    SOGLIA_CAMBIO_MINUTI, SOGLIA_TRATTA_RARA, creaIndice, calcolaMete, restoTratta, fermateTratta, stazioniCambio,
+    SOGLIA_CAMBIO_MINUTI, SOGLIA_TRATTA_RARA, creaIndice, calcolaMete, restoTratta, provenienzaTratta, fermateTratta, stazioniCambio,
     minutiTratta, direttiTratta, formattaOrario, fascia, formattaDurata,
   };
 }

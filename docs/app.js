@@ -280,11 +280,17 @@ function disegnaPercorso(etichetta) {
   const renderer = L.canvas({ pane: "percorso" });
   const opzioni = { pane: "percorso", renderer, interactive: false };
   const tratti = etichetta.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati));
-  // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia.
+  // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia; la
+  // provenienza (fermate prima di dove si sale) a puntini, più tenue.
   for (const t of etichetta.tratte) {
-    const resto = [rete.treni[t.treno].fermate[t.a].stazione, ...restoTratta(rete, t)];
+    const fermate = rete.treni[t.treno].fermate;
+    const resto = [fermate[t.a].stazione, ...restoTratta(rete, t)];
     if (resto.length > 1) {
       L.polyline(lineaFermate(resto, coordinate, stato.tracciati), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
+    }
+    const prima = [...provenienzaTratta(rete, t), fermate[t.da].stazione];
+    if (prima.length > 1) {
+      L.polyline(lineaFermate(prima, coordinate, stato.tracciati), { ...opzioni, color: colore("--percorso"), weight: 2, opacity: 0.45, dashArray: "1 6", lineCap: "round" }).addTo(stratoPercorso);
     }
   }
   L.polyline(tratti, { ...opzioni, color: colore("--sfondo"), weight: 8, opacity: 0.7 }).addTo(stratoPercorso);
@@ -416,7 +422,11 @@ function mostraScheda(id) {
       const fermate = treno.fermate;
       if (k > 0) righe.push(`<li class="cambio"><i class="anello" aria-hidden="true"></i> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
       const resto = restoTratta(rete, t);
-      const prosegue = (treno.operatore ? `${escapeHtml(treno.operatore)} · ` : "") + (resto.length
+      const prima = provenienzaTratta(rete, t);
+      const arriva = prima.length
+        ? `arriva da ${nome(prima[0])}` + (prima.length > 1 ? ` (${prima.length} fermate prima)` : "")
+        : "parte da qui";
+      const prosegue = (treno.operatore ? `${escapeHtml(treno.operatore)} · ` : "") + `${arriva} · ` + (resto.length
         ? `prosegue per ${nome(resto[resto.length - 1])}` +
           (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "")
         : "termina qui");

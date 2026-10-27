@@ -114,6 +114,8 @@ test("tratte: fermate, minuti e resto della tratta", () => {
   assert.strictEqual(P.minutiTratta(RETE, tratta), 20);
   assert.deepStrictEqual(P.restoTratta(RETE, tratta), ["C", "D"]);
   assert.deepStrictEqual(P.restoTratta(RETE, { treno: 0, da: 0, a: 3 }), []);
+  assert.deepStrictEqual(P.provenienzaTratta(RETE, { treno: 0, da: 2, a: 3 }), ["A", "B"]);
+  assert.deepStrictEqual(P.provenienzaTratta(RETE, tratta), []);
 });
 
 test("fasce di colore", () => {
