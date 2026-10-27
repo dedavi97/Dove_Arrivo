@@ -12,6 +12,12 @@
 - [ ] Indagine prezzi (solo report, nessun codice nell'app)
 - [ ] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
 - [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
+- [ ] Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
+  (es. solo Trenitalia, solo Trenord, entrambe). Richiesta di Davide 27/10/2026.
+- [ ] Percorsi alternativi quando il diretto ha poche corse (es. Torino →
+  Racconigi, 5 diretti: mostrare anche le soluzioni con cambio che coprono le
+  altre ore). Forse si risolve col filtro fascia oraria: da valutare insieme.
+  Richiesta di Davide 27/10/2026.
 
 ## In attesa
 - Niente al momento.
