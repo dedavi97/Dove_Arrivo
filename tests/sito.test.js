@@ -138,3 +138,22 @@ test("htmlDiretti: tratta rara con avviso, normale, molti orari a scomparsa", ()
   assert.match(molti, /<details/);
   assert.strictEqual(htmlDiretti(null, giorni), "");
 });
+
+test("fonti: elenco con validità, avviso se scaduta, operatore per nome", () => {
+  global.formattaData = require("../docs/rete.js").formattaData;
+  const { htmlFonti, fonteDi } = require("../docs/app.js");
+  const meta = {
+    fonte: "Orario Trenord: Regione Lombardia <CC-BY>",
+    fonti: [
+      { nome: "Trenitalia", treni: 2082, validita_dal: "2026-10-24", validita_al: "2027-12-11", scaduta: false },
+      { nome: "Trenord", treni: 343, validita_dal: "2026-07-26", validita_al: "2026-12-12", scaduta: true },
+    ],
+  };
+  const html = htmlFonti(meta);
+  assert.match(html, /Trenitalia<\/strong>: 2082 treni, orario valido dal 24\/10\/2026 al 11\/12\/2027<\/li>/);
+  assert.match(html, /Trenord<\/strong>: 343 treni.*orario scaduto/);
+  assert.match(html, /&lt;CC-BY&gt;/);
+  assert.strictEqual(htmlFonti({ fonte: "solo testo" }), "solo testo");
+  assert.strictEqual(fonteDi({ meta }, "Trenord").scaduta, true);
+  assert.strictEqual(fonteDi({ meta }, undefined), null);
+});

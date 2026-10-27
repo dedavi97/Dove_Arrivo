@@ -3,19 +3,15 @@ import datetime
 import sys
 from pathlib import Path
 
-from . import comuni, costruisci, gtfs, pubblica, regioni, rete, scarica
+from . import comuni, costruisci, fonti, gtfs, pubblica, regioni, rete, scarica
 
 RADICE = Path(__file__).resolve().parent.parent
 FILE_DATI = RADICE / "docs" / "data" / "rete.json"
 
 PERIMETRO = costruisci.ITALIA  # oppure il nome di una regione, es. "Piemonte"
-CATEGORIE_REGIONALI = {"REG", "RV", "SFM", "MET"}
 
-GTFS_URL = "https://github.com/deryclem/trenitalia-gtfs/raw/main/gtfs-trenitalia.zip"
-GTFS_DATA_URL = "https://raw.githubusercontent.com/deryclem/trenitalia-gtfs/main/.last_publication_timestamp"
 REGIONI_URL = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"
-FONTE = (
-    "Orario: Trenitalia S.p.A. / CCISS MMTIS (NAP), conversione GTFS di Clément Desouche, CC-BY-4.0. "
+FONTE_TERRITORIO = (
     "Confini regionali e comunali: ISTAT via openpolis/geojson-italy, CC-BY-4.0. "
     "Abitanti: ISTAT, popolazione residente al 1° gennaio {anno}, CC-BY-4.0."
 )
@@ -33,31 +29,18 @@ def barra(frazione):
         print()
 
 
-def prepara_orario(avvisi):
-    fase(1, "Controllo se c'è un orario Trenitalia più recente")
-    cache_zip = scarica.CACHE / "gtfs-trenitalia.zip"
-    cache_data = scarica.CACHE / "gtfs-trenitalia.data"
-    try:
-        pubblicato = scarica.scarica_testo(GTFS_DATA_URL)
-    except ConnectionError as errore:
-        if not cache_zip.exists():
-            raise
-        avvisi.append(f"impossibile controllare gli aggiornamenti, uso l'orario già scaricato ({errore})")
-        pubblicato = None
-    print(f"    orario pubblicato il: {pubblicato or 'sconosciuto'}")
-
-    fase(2, "Download dell'orario (circa 6,5 MB)")
-    gia_scaricato = cache_data.read_text(encoding="utf-8").strip() if cache_data.exists() else None
-    if cache_zip.exists() and (pubblicato is None or pubblicato == gia_scaricato):
-        print("    già scaricato in precedenza, salto il download")
-    else:
-        scarica.scarica_file(GTFS_URL, cache_zip.name, barra)
-        cache_data.write_text(pubblicato, encoding="utf-8")
-    return cache_zip
+def prepara_orari(avvisi):
+    fase(1, "Orari: controllo se ce ne sono di nuovi e li scarico")
+    percorsi = []
+    for fonte in fonti.FONTI:
+        percorso = fonti.prepara(fonte, avvisi, barra)
+        if percorso:
+            percorsi.append((fonte, percorso))
+    return percorsi
 
 
 def prepara_regioni():
-    fase(3, "Confini delle regioni")
+    fase(2, "Confini delle regioni")
     file = scarica.CACHE / "regioni.geojson"
     if file.exists():
         print("    già scaricati in precedenza")
@@ -68,7 +51,7 @@ def prepara_regioni():
 
 def prepara_comuni(oggi):
     """Restituisce (funzione stazione -> (comune, abitanti) o None, anno della popolazione)."""
-    fase(4, "Comuni e abitanti (ISTAT)")
+    fase(3, "Comuni e abitanti (ISTAT)")
     confini = scarica.CACHE / "comuni.geojson"
     if confini.exists():
         print("    confini dei comuni già scaricati in precedenza")
@@ -98,7 +81,8 @@ def prepara_comuni(oggi):
     return comune_di, anno
 
 
-def stampa_riepilogo(nuova, diff, avvisi):
+def stampa_riepilogo(nuova, diff, avvisi, abbinamenti=None):
+    """abbinamenti = {nome fonte: info della lettura con "abbinamenti" e "nuove"}."""
     m = nuova["meta"]
     print("\n" + "=" * 60)
     print("RIEPILOGO")
@@ -111,6 +95,20 @@ def stampa_riepilogo(nuova, diff, avvisi):
     print(f"  Stazioni:           {m['conteggi']['stazioni']}")
     con_comune = sum(1 for s in nuova["stazioni"] if "abitanti" in s)
     print(f"  Con comune/abitanti: {con_comune} (le altre sono all'estero o senza comune trovato)")
+    for f in m.get("fonti", []):
+        dal, al = (datetime.date.fromisoformat(f[k]) for k in ("validita_dal", "validita_al"))
+        print(f"\n  {f['nome'].upper()}")
+        print(f"    treni nella rete: {f['treni']}")
+        print(f"    orario valido:    dal {dal:%d/%m/%Y} al {al:%d/%m/%Y}")
+        if f["scaduta"]:
+            print("    !!! ORARIO SCADUTO: si usano i suoi dati vecchi finché non ne esce uno nuovo !!!")
+        extra = (abbinamenti or {}).get(f["nome"], {})
+        if "abbinamenti" in extra:
+            modi = ", ".join(f"{modo} {n}" for modo, n in sorted(extra["abbinamenti"].items()) if modo != "nuova")
+            print(f"    stazioni abbinate a Trenitalia: {modi or 'nessuna'}")
+            nuove = extra["nuove"]
+            print(f"    stazioni nuove (non abbinate): {len(nuove)}"
+                  + (f" - es. {', '.join(nuove[:8])}{' ...' if len(nuove) > 8 else ''}" if nuove else ""))
 
     if diff is None:
         print("\n  Prima scansione: nessun confronto possibile.")
@@ -134,24 +132,34 @@ def stampa_riepilogo(nuova, diff, avvisi):
 def esegui(solo_scansione):
     avvisi = []
     oggi = datetime.date.today()
-    archivio = gtfs.apri(prepara_orario(avvisi))
+    percorsi = prepara_orari(avvisi)
     elenco_regioni = prepara_regioni()
     comune_di, anno_popolazione = prepara_comuni(oggi)
 
-    fase(5, "Lettura delle corse regionali dei giorni tipo")
-    inizio, fine = gtfs.validita(archivio)
+    fase(4, "Lettura delle corse regionali dei giorni tipo")
+    principale = percorsi[0][1]  # Trenitalia: i giorni tipo si scelgono sulla sua validità
+    inizio, fine = gtfs.validita(gtfs.apri(principale))
     giorni = gtfs.scegli_giorni_tipo(oggi, inizio, fine)
-    print(f"    orario valido dal {inizio:%d/%m/%Y} al {fine:%d/%m/%Y}")
     print(f"    giorni tipo: mercoledì {', '.join(f'{g:%d/%m/%Y}' for g in giorni)}")
-    corse, stazioni, avvisi_lettura = gtfs.leggi_corse(archivio, giorni, CATEGORIE_REGIONALI, barra)
-    avvisi += avvisi_lettura
-    print(f"    {len(corse)} corse regionali in tutta Italia in quei giorni")
+    lette = []
+    for fonte, percorso in percorsi:
+        print(f"    {fonte.nome}:")
+        letta = fonti.leggi(fonte, percorso, giorni, oggi, avvisi, barra)
+        print(f"    {fonte.nome}: {len(letta.corse)} corse")
+        lette.append(letta)
+
+    fase(5, "Unione delle fonti (stazioni in comune)")
+    corse, stazioni = fonti.unisci(lette, avvisi)
+    for letta in lette[1:]:
+        print(f"    {letta.fonte.nome}: {letta.info['abbinamenti']}")
 
     fase(6, f"Costruzione della rete ({PERIMETRO}) e confronto con la precedente")
+    attribuzioni = " ".join([letta.fonte.attribuzione for letta in lette] + [FONTE_TERRITORIO.format(anno=anno_popolazione)])
     nuova = costruisci.costruisci_rete(
         corse, stazioni,
-        lambda s: regioni.regione_di(s.lat, s.lon, s.id, elenco_regioni),
-        PERIMETRO, oggi, giorni, FONTE.format(anno=anno_popolazione), comune_di,
+        lambda s: regioni.regione_di(s.lat, s.lon, s.uic, elenco_regioni),
+        PERIMETRO, oggi, giorni, attribuzioni, comune_di,
+        [{k: letta.info[k] for k in ("nome", "validita_dal", "validita_al", "scaduta", "attribuzione")} for letta in lette],
     )
     senza = [s["nome"] for s in nuova["stazioni"] if s["regione"] != regioni.ESTERO and "abitanti" not in s]
     if senza:
@@ -161,7 +169,7 @@ def esegui(solo_scansione):
     except rete.ErroreFormato as errore:
         avvisi.append(f"il file dati precedente non è leggibile e verrà sostituito: {errore}")
         vecchia = None
-    stampa_riepilogo(nuova, rete.differenze(vecchia, nuova), avvisi)
+    stampa_riepilogo(nuova, rete.differenze(vecchia, nuova), avvisi, {letta.fonte.nome: letta.info for letta in lette})
 
     if rete.contenuto_uguale(vecchia, nuova):
         print("\nLa rete è identica a quella già presente: niente da salvare né da pubblicare.")

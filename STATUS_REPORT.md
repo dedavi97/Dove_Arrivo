@@ -1,31 +1,32 @@
 # Stato del progetto
 
-**Versione:** 0.6.0 — 27/10/2026
-**Ultima funzione:** frequenza dei treni diretti nella scheda
-**Prossimo passo:** 0.7.0 Trenord — prima indagine e report a Davide
+**Versione:** 0.7.0 — 27/10/2026
+**Ultima tappa:** Trenord (Lombardia) aggiunto alla rete
+**Prossimo passo:** indagine prezzi (solo report), poi 0.8.0 linee sulle stazioni intermedie
 
 ## Cosa funziona
-- **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 1714
-  stazioni e 2082 treni regionali Trenitalia. Scegli la partenza toccando
-  una stazione o cercandola per nome (con la regione accanto); cursori per
-  cambi massimi (0–3), ore massime (30 min – 6 h) e abitanti minimi del
-  comune (le stazioni sotto soglia spariscono). Mete colorate per tempo
-  (verde, giallo, rosso), le altre spente; legenda sempre visibile.
-- Toccando una meta: comune e abitanti, treni, cambi, tempo totale, dove
-  prosegue ogni treno, quanti diretti ci sono al giorno su ogni tratta e a
-  che ora (avviso ⚠ se sono meno di 6); percorso evidenziato, prosecuzioni tratteggiate, cambi
-  segnati con un anello viola; "Verifica prezzo" apre Trenitalia, "Parti da qui".
-- Impostazioni (ricorda partenza e limiti, mostra linee), Aiuto, Informazioni.
-- Provato in formato telefono e computer.
-- File dati: 2,0 MB (circa 240 KB scaricati, compressi).
-- `Aggiorna_Dati.bat` aggiorna i dati in ~8 secondi (la prima volta scarica
-  anche i confini dei comuni, ~36 MB).
+- **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 2103
+  stazioni e 2425 treni regionali (Trenitalia 2082, Trenord 343). Scegli la
+  partenza toccando una stazione o cercandola per nome; cursori per cambi
+  (0–3), ore (30 min – 6 h) e abitanti minimi del comune. Mete colorate per
+  tempo, legenda sempre visibile.
+- Toccando una meta: comune e abitanti, treni con il loro operatore, cambi,
+  tempo totale, dove prosegue ogni treno, quanti diretti al giorno su ogni
+  tratta e a che ora (⚠ se meno di 6); percorso evidenziato, cambi con anello
+  viola; "Verifica prezzo" (Trenitalia), "Sito Trenord" se serve, "Parti da qui".
+- Impostazioni, Aiuto, Informazioni (fonti con le date di validità).
+- `Aggiorna_Dati.bat` aggiorna i dati da entrambe le aziende in ~12 secondi;
+  il riepilogo è diviso per fonte e segnala orari scaduti o in scadenza.
+- File dati: 2,4 MB (circa 285 KB scaricati, compressi).
 
 ## Regole del calcolo
 - Un percorso con un cambio in più viene proposto solo se fa risparmiare
   almeno 15 minuti per cambio (decisione di Davide).
 
 ## Da sapere
-- Solo treni Trenitalia: Lombardia (Trenord) ed Emilia-Romagna (Trenitalia
-  Tper) sono quasi scoperte, mancano le ferrovie locali.
+- **L'orario Trenord scade il 12/12/2026** (cambio orario del 13/12). Dopo,
+  finché la Regione non pubblica il nuovo, il sito usa i dati vecchi e lo dice.
+- Mancano Trenitalia Tper (Emilia-Romagna) e le ferrovie locali.
+- Le linee Domodossola–Milano di Trenord (R23, RE4) oggi risultano autobus:
+  non compaiono.
 - La Valle d'Aosta non compare (Ivrea–Aosta servita solo da autobus).

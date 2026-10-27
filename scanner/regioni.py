@@ -72,10 +72,14 @@ def regione_di(lat, lon, codice, regioni):
     I confini sono semplificati: le stazioni sulla costa cadono fino a ~0,3 km fuori
     e vanno alla regione più vicina; quelle francesi distano almeno ~4 km.
     """
-    if not codice.startswith("83"):
+    if codice is not None and not codice.startswith("83"):
         return ESTERO
     for r in regioni:
         if r.contiene(lat, lon):
             return r.nome
+    # Senza codice (fonti come Trenord) niente tolleranza: Chiasso o Stabio sono a poche
+    # centinaia di metri dal confine ma in Svizzera.
+    if codice is None:
+        return ESTERO
     distanza, nome = min((r.distanza_km(lat, lon), r.nome) for r in regioni)
     return nome if distanza <= SOGLIA_COSTA_KM else ESTERO

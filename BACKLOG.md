@@ -8,7 +8,7 @@
 - [x] 0.4.0 Estensione a tutta Italia (solo Trenitalia)
 - [x] 0.5.0 Filtro stazioni per abitanti del comune (cursore, le altre spariscono)
 - [x] 0.6.0 Frequenza dei treni diretti nella scheda (N al giorno + orari, avviso tratte rare)
-- [ ] 0.7.0 Trenord (GTFS Regione Lombardia): prima indagine e report a Davide, poi codice
+- [x] 0.7.0 Trenord (GTFS Regione Lombardia): scanner a più fonti, stazioni unite, fonte scaduta
 - [ ] Indagine prezzi (solo report, nessun codice nell'app)
 - [ ] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
 - [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
@@ -25,10 +25,11 @@
 - Trenitalia Tper (Emilia-Romagna): Davide sta indagando sulle fonti.
 - Numero di versione nei nomi dei file del sito (es. `app.js?v=0.6.0`), così
   dopo un aggiornamento il browser non mescola pezzi vecchi e nuovi.
-- Altri operatori regionali non presenti nell'orario Trenitalia: priorità
-  Trenord (Lombardia) e Trenitalia Tper (Emilia-Romagna), poi ferrovie locali
-  (GTT, FNM, Circumvesuviana, FSE, ARST…). Capire quanto ha senso spingersi
-  e se pubblicano un GTFS aperto.
+- Altri operatori regionali: Trenitalia Tper (Emilia-Romagna, Davide sta
+  indagando), poi ferrovie locali (GTT, Circumvesuviana, FSE, ARST…). Con lo
+  scanner a più fonti basta aggiungere una `Fonte` in scanner/fonti.py.
+- Dopo il 13/12/2026: scaricare il nuovo orario Trenord appena la Regione lo
+  pubblica (fino ad allora l'app usa i dati vecchi e lo segnala).
 - Frecce / Intercity: sono già nell'orario Trenitalia, possibile opzione futura.
 - Autobus sostitutivi Trenitalia (es. Ivrea–Aosta chiusa per lavori): oggi esclusi.
 - "Verifica prezzo": nessun link precompilato possibile; aprire la ricerca

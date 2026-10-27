@@ -288,6 +288,47 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
     27, Emilia-Romagna 9, Piemonte 3, Liguria 1) + Milano Repubblica.
 - Nessun numero treno in comune con le corse Trenitalia del 04/11: niente doppioni.
 
+## Più fonti (dalla 0.7.0)
+- `scanner/fonti.py`: `Fonte` (url, url_versione + leggi_versione per sapere se
+  riscaricare, file in cache, categoria per riga di routes.txt, attribuzione,
+  obbligatoria, prefisso_id, codice_base, codici_uic). `FONTI = [TRENITALIA,
+  TRENORD]`, la prima è la principale (giorni tipo scelti sulla sua validità).
+  Versione Trenitalia = `.last_publication_timestamp`; Trenord =
+  `viewLastModified` dell'API dati.lombardia.it. Timbro in cache `<file>.data`.
+- `prepara()`: se la versione non si legge o il download fallisce si usa la
+  copia in cache con avviso "ATTENZIONE"; fonte non obbligatoria mai scaricata
+  → avviso "i suoi treni MANCANO", la scansione continua; Trenitalia
+  mancante → errore.
+- `leggi()`: se nessun giorno tipo cade nella validità della fonte → SCADUTA:
+  si usano i suoi ultimi mercoledì validi (`gtfs.scegli_giorni_finali`, bit
+  mappati per indice sui giorni tipo), avviso evidente, `scaduta: true` in
+  `meta.fonti`. Avviso anche se scade entro 30 giorni.
+- `unisci()` + `scanner/abbina.py`: ordine tabella manuale
+  (`scanner/abbinamenti_manuali.csv`, colonne fonte,id_fonte,nome_fonte,
+  id_trenitalia,nome_trenitalia,nota) → codice (`8300`+cifre) entro 300 m →
+  nome (uno inizio dell'altro, parola per parola) entro 300 m → nuova con id
+  `TN-<stop_id>`. Le stazioni nuove hanno `uic = None`: regione solo dai
+  poligoni, senza tolleranza costa (Chiasso, Stabio sono in Svizzera).
+- gtfs.py generico: niente calendar.txt ok; `validita()` da feed_info o dai
+  calendari; `leggi_corse(..., categoria_di_route, ..., operatore)`;
+  numero treno = parte dopo " - " (Trenord: "RE_11 - 2153" → "2153").
+- Trenord: categoria = linea ("S5", "RE4", "R23"; non specificata → "R"),
+  route_type 3 escluso. Treni raggruppati per (operatore, sequenza).
+- rete.json: `treni[].operatore`; `meta.fonti` = [{nome, validita_dal,
+  validita_al, scaduta, attribuzione, treni}]; `meta.fonte` = tutte le
+  attribuzioni. Sempre formato_versione 1.
+- 27/10/2026: Trenitalia 10139 corse + Trenord 2482 → 2425 treni (343
+  Trenord), 2103 stazioni (Lombardia 393). Stazioni Trenord dei giorni tipo:
+  54 per codice, 5 per nome, 384 nuove (i due manuali, Andora e Viareggio,
+  sono treni estivi assenti a novembre). rete.json 2,38 MB (gzip ≈285 KB).
+  Scansione ~12 s. Calcolo da Milano con 3 cambi e 6 h ≈6 ms.
+- Il primo download Trenord è fallito una volta con "WinError 5 Accesso
+  negato" sul rename del `.part` (file appena copiato in cache, probabilmente
+  antivirus): il nuovo tentativo dopo 5 s è riuscito.
+- Sito: `fonteDi()`, `htmlFonti()` in app.js; operatore nella riga
+  "prosegue"; avviso ⚠ per i treni di fonti scadute; pulsante "Sito Trenord"
+  (https://www.trenord.it/) se il viaggio usa Trenord.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

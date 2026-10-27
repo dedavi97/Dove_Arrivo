@@ -3,6 +3,7 @@
 const URL_RETE = "data/rete.json";
 const URL_NOVITA = "CHANGELOG.md";
 const URL_TRENITALIA = "https://www.lefrecce.it/Channels.Website.WEB/";
+const URL_TRENORD = "https://www.trenord.it/";
 const CHIAVE_MEMORIA = "dove_arrivo_stato";
 const CENTRO_INIZIALE = [45.05, 7.9];
 // Gradini del cursore "abitanti min": irregolari, così anche le soglie piccole si scelgono bene.
@@ -98,6 +99,22 @@ function htmlDiretti(diretti, giorniTipo) {
     return `<details class="diretti"><summary>${titolo} · vedi orari</summary>${orari} ${quando}</details>`;
   }
   return `<span class="diretti">${titolo}: ${orari} ${quando}</span>`;
+}
+
+// Fonte (meta.fonti) di un operatore, per sapere se il suo orario è scaduto.
+function fonteDi(rete, operatore) {
+  return ((rete.meta && rete.meta.fonti) || []).find((f) => f.nome === operatore) || null;
+}
+
+// Elenco delle fonti per "Informazioni": nome, validità, avviso se scaduta.
+function htmlFonti(meta) {
+  if (!meta.fonti) return escapeHtml(meta.fonte || "—");
+  const righe = meta.fonti.map((f) => {
+    const scaduta = f.scaduta ? ` <strong class="scaduta">orario scaduto: dati vecchi</strong>` : "";
+    return `<li><strong>${escapeHtml(f.nome)}</strong>: ${f.treni} treni, orario valido dal ` +
+      `${formattaData(f.validita_dal)} al ${formattaData(f.validita_al)}${scaduta}</li>`;
+  });
+  return `<ul class="fonti">${righe.join("")}</ul><p class="attribuzioni">${escapeHtml(meta.fonte || "")}</p>`;
 }
 
 function testoCambi(n) {
@@ -364,27 +381,36 @@ function mostraScheda(id) {
       const fermate = treno.fermate;
       if (k > 0) righe.push(`<li class="cambio"><i class="anello" aria-hidden="true"></i> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
       const resto = restoTratta(rete, t);
-      const prosegue = resto.length
+      const prosegue = (treno.operatore ? `${escapeHtml(treno.operatore)} · ` : "") + (resto.length
         ? `prosegue per ${nome(resto[resto.length - 1])}` +
           (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "")
-        : "termina qui";
+        : "termina qui");
+      const fonte = fonteDi(rete, treno.operatore);
+      const scaduta = fonte && fonte.scaduta
+        ? `<span class="diretti rara"><span class="avviso" aria-hidden="true">⚠</span> Orario ${escapeHtml(fonte.nome)} ` +
+          `scaduto il ${formattaData(fonte.validita_al)}: questi dati sono vecchi, controlla l'orario nuovo</span>`
+        : "";
       righe.push(
         `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
           `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
           `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span>` +
           `<span class="prosegue">${prosegue}</span>` +
           htmlDiretti(direttiTratta(stato.indice, fermate[t.da].stazione, fermate[t.a].stazione), rete.meta.giorni_tipo) +
+          scaduta +
           `</li>`
       );
     });
+    const conTrenord = etichetta.tratte.some((t) => rete.treni[t.treno].operatore === "Trenord");
     corpo.innerHTML = comune +
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
       `<ol class="tratte">${righe.join("")}</ol>` +
       `<div class="azioni">` +
       `<a class="bottone primario" href="${URL_TRENITALIA}" target="_blank" rel="noopener">Verifica prezzo</a>` +
+      (conTrenord ? `<a class="bottone" href="${URL_TRENORD}" target="_blank" rel="noopener">Sito Trenord</a>` : "") +
       partiDaQui +
       `</div>` +
-      `<p class="nota">Su Trenitalia cerca da <strong>${nome(stato.origine)}</strong> a <strong>${nome(id)}</strong>. ` +
+      `<p class="nota">Su Trenitalia cerca da <strong>${nome(stato.origine)}</strong> a <strong>${nome(id)}</strong>` +
+      (conTrenord ? ` (per i treni Trenord anche sul sito Trenord)` : "") + `. ` +
       `Il tempo conta solo i minuti sui treni, senza le attese ai cambi.</p>`;
   }
   corpo.querySelector('[data-azione="parti"]').addEventListener("click", () => impostaOrigine(id));
@@ -573,7 +599,7 @@ function compilaInformazioni(rete) {
     `aggiornati il ${formattaData(m.data_aggiornamento)} · ${m.perimetro} · ` +
     `${m.conteggi.stazioni} stazioni, ${m.conteggi.treni} treni` +
     (m.giorni_tipo ? ` · orari dei mercoledì ${m.giorni_tipo.map(formattaData).join(", ")}` : "");
-  document.getElementById("info-fonti").textContent = m.fonte || "—";
+  document.getElementById("info-fonti").innerHTML = htmlFonti(m);
 }
 
 // ---------------------------------------------------------------- avvio
@@ -633,6 +659,6 @@ if (typeof document !== "undefined") {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    changelogInHtml, escapeHtml, raggioStazione, htmlDiretti, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
+    changelogInHtml, escapeHtml, raggioStazione, htmlDiretti, htmlFonti, fonteDi, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
   };
 }

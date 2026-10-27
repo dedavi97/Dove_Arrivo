@@ -3,6 +3,19 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.7.0 — 27/10/2026
+- Arrivano i treni **Trenord**: Lombardia, Malpensa Express, linee ex
+  Ferrovienord e linee verso la Svizzera. 343 treni e 384 stazioni nuove
+  (la Lombardia passa da 43 a 393 stazioni).
+- Le stazioni servite da entrambe le aziende sono un solo pallino e ci si
+  può cambiare (es. Milano Centrale, Brescia, Novara e Novara Nord).
+- Nella scheda di ogni treno c'è scritto chi lo gestisce; se il viaggio usa
+  un treno Trenord compare anche il pulsante "Sito Trenord".
+- In "Informazioni" le fonti con le date di validità dei loro orari. Se
+  l'orario di un'azienda scade, i suoi treni restano con i dati vecchi e la
+  scheda lo segnala.
+- L'orario Trenord attuale vale fino al 12/12/2026.
+
 ## 0.6.0 — 27/10/2026
 - Per ogni treno del percorso la scheda dice quanti treni diretti ci sono al
   giorno su quella tratta e a che ora partono (contando tutti i treni che

@@ -19,6 +19,10 @@ Entrambi devono essere verdi prima di ogni commit di tappa.
   in avanti, soglia per i cambi), tratte, colori, treni diretti per tratta;
   più controlli sulla rete reale (Torino Porta Nuova → Asti diretto,
   Torino Porta Nuova → Racconigi con i suoi 5 orari).
+- `test_fonti.py`: più fonti — abbinamento delle stazioni (codice solo se
+  vicino, nome, tabella manuale), linee e numeri Trenord, orario senza
+  calendar.txt, fonte scaduta (dati vecchi tenuti + avviso), fonte non
+  scaricabile (copia vecchia o avviso), niente download se la versione è uguale.
 - `test_versione.py` / `versione.test.js`: la versione è coerente col changelog.
 
 Ambiente verificato il 26/10/2026: Python 3.12.10 + pytest 9.1.1, Node 24.14.0.

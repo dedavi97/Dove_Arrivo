@@ -27,10 +27,10 @@ def bel_nome(nome):
 
 
 def raggruppa_per_sequenza(corse):
-    """{sequenza di fermate: [corse con quella sequenza]}."""
+    """{(operatore, sequenza di fermate): [corse con quella sequenza]}."""
     gruppi = {}
     for c in corse:
-        gruppi.setdefault(tuple(s for s, _ in c.fermate), []).append(c)
+        gruppi.setdefault((c.operatore, tuple(s for s, _ in c.fermate)), []).append(c)
     return gruppi
 
 
@@ -66,8 +66,9 @@ def _numero(corsa):
     return int(corsa.numero) if corsa.numero.isdigit() else float("inf")
 
 
-def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte, comune_di=None):
-    """regione_di(stazione) -> nome regione; comune_di(stazione) -> (comune, abitanti) oppure None."""
+def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, giorni_tipo, fonte, comune_di=None, fonti=None):
+    """regione_di(stazione) -> nome regione; comune_di(stazione) -> (comune, abitanti) oppure None;
+    fonti = riepilogo di ogni fonte (nome, validità, scaduta, attribuzione...) da mettere in meta."""
     regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
     dentro = (lambda r: r != ESTERO) if perimetro == ITALIA else (lambda r: r == perimetro)
     nel_perimetro = [c for c in corse if any(dentro(regioni[s]) for s, _ in c.fermate)]
@@ -90,19 +91,26 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
         "stazioni": [_stazione(stazioni[i], regioni[i], comune_di) for i in usate],
         "treni": [_treno(g) for g in gruppi],
     }
+    if fonti is not None:
+        for f in fonti:
+            f["treni"] = sum(1 for g in gruppi if piu_veloce(g).operatore == f["nome"])
+        rete["meta"]["fonti"] = fonti
     return rete
 
 
 def _treno(gruppo):
     c = piu_veloce(gruppo)
     profili, corse = orari_gruppo(gruppo)
-    return {
+    treno = {
         "numero": c.numero,
         "categoria": c.categoria,
         "fermate": [{"stazione": s, "minuti_dalla_partenza": m} for s, m in c.fermate],
         "profili": profili,
         "corse": corse,
     }
+    if c.operatore:
+        treno["operatore"] = c.operatore
+    return treno
 
 
 def _stazione(s, regione, comune_di):
