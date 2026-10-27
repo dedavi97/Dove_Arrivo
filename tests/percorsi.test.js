@@ -203,6 +203,38 @@ test("percorsoAlternativo: senza i treni della tratta rara si passa dal cambio",
   assert.strictEqual(P.percorsoAlternativo(rete, (t) => t.numero !== "2", "A", "X", [["A", "X"]], 1, 600), null);
 });
 
+test("percorsiAlternativi: cambi in stazioni diverse, entro lo scarto", () => {
+  const rete = {
+    stazioni: [],
+    treni: [
+      treno("D", ["A", 0], ["X", 27]),                  // diretto raro
+      treno("1", ["A", 0], ["B", 21]), treno("2", ["B", 0], ["X", 7]),   // via B: 28
+      treno("3", ["A", 0], ["C", 31]), treno("4", ["C", 0], ["X", 5]),   // via C: 36
+      treno("5", ["A", 0], ["F", 60]), treno("6", ["F", 0], ["X", 10]),  // via F: 70, troppo più lunga
+    ],
+  };
+  const alt = P.percorsiAlternativi(rete, () => true, "A", "X", [["A", "X"]], 1, 600);
+  assert.deepStrictEqual(alt.map((a) => [a.minuti, P.stazioniCambio(rete, a)]), [[28, ["B"]], [36, ["C"]]]);
+  assert.strictEqual(P.percorsiAlternativi(rete, () => true, "A", "X", [["A", "X"]], 1, 600, 1).length, 1);
+  assert.strictEqual(P.percorsiAlternativi(rete, () => true, "A", "X", [["A", "X"]], 1, 600, 3, 60).length, 3);
+});
+
+test("calcolaMete con cambi vietati", () => {
+  // senza poter cambiare in C, F (A→C→F) non si raggiunge
+  assert.ok(P.calcolaMete(indice, "A", 2, 600).has("F"));
+  assert.ok(!P.calcolaMete(indice, "A", 2, 600, new Set(["C"])).has("F"));
+});
+
+test("rete reale: Torino Porta Nuova → Racconigi, alternative via Carmagnola e via Cavallermaggiore", () => {
+  const rete = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "data", "rete.json"), "utf8"));
+  const id = (nome) => rete.stazioni.find((s) => s.nome === nome).id;
+  const nomeDi = (sid) => rete.stazioni.find((s) => s.id === sid).nome;
+  const alt = P.percorsiAlternativi(rete, () => true, id("Torino Porta Nuova"), id("Racconigi"),
+    [[id("Torino Porta Nuova"), id("Racconigi")]], 1, 360);
+  const via = alt.map((a) => P.stazioniCambio(rete, a).map(nomeDi).join(","));
+  assert.ok(via.includes("Carmagnola") && via.includes("Cavallermaggiore"), via.join(" / "));
+});
+
 test("rete reale: Torino Porta Nuova → Racconigi, alternativa con cambio a Carmagnola", () => {
   const rete = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "data", "rete.json"), "utf8"));
   const id = (nome) => rete.stazioni.find((s) => s.nome === nome).id;

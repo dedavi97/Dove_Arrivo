@@ -283,9 +283,8 @@ function disegnaPercorso(etichetta, alternativa) {
   const tratti = etichetta.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati));
   // Alternativa per gli altri orari: spesso corre sugli stessi binari del percorso, quindi si
   // disegna sopra di lui, più sottile e di un altro colore (vedi sotto, dopo il percorso).
-  const trattiAlternativa = alternativa
-    ? alternativa.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati))
-    : [];
+  const trattiAlternativa = (alternativa || [])
+    .flatMap((alt) => alt.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati)));
   // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia; la
   // provenienza (fermate prima di dove si sale) a puntini, più tenue.
   for (const t of etichetta.tratte) {
@@ -310,7 +309,7 @@ function disegnaPercorso(etichetta, alternativa) {
   const r = raggioStazione(mappa.getZoom()) + 5;
   const cambi = [
     ...stazioniCambio(rete, etichetta).map((id) => [id, "--cambio"]),
-    ...(alternativa ? stazioniCambio(rete, alternativa).map((id) => [id, "--alternativa"]) : []),
+    ...(alternativa || []).flatMap((alt) => stazioniCambio(rete, alt).map((id) => [id, "--alternativa"])),
   ];
   for (const [id, tinta] of cambi) {
     const anello = L.circleMarker(coordinate(id), {
@@ -461,25 +460,33 @@ function tratteRare(etichetta) {
     });
 }
 
-// Se il percorso ha tratte rare: il percorso migliore senza i loro treni (null se non c'è
-// entro i limiti), con al massimo un cambio in più. undefined se non serve un'alternativa.
+// Se il percorso ha tratte rare: le alternative senza i loro treni, con cambi in stazioni
+// diverse ([] se non ce ne sono entro i limiti), fino a un cambio in più del percorso.
+// undefined se non serve.
 function percorsoQuandoManca(etichetta, meta) {
   const rare = tratteRare(etichetta);
   if (!rare.length) return undefined;
   const maxCambi = Math.min(3, Math.max(stato.maxCambi, etichetta.tratte.length));
-  return percorsoAlternativo(stato.rete, (t) => aziendaAmmessa(t, stato.imp.spente), stato.origine, meta,
+  return percorsiAlternativi(stato.rete, (t) => aziendaAmmessa(t, stato.imp.spente), stato.origine, meta,
     rare, maxCambi, stato.maxOre * 60);
 }
 
-function htmlAlternativa(alternativa) {
-  const intro = `<h3><span class="linea-alternativa" aria-hidden="true"></span> Negli altri orari</h3>` +
-    `<p class="nota">Quando il treno con poche corse non c'è:</p>`;
-  if (!alternativa) {
-    return `<section class="alternativa">${intro}<p class="nota">Nessuna alternativa entro i limiti di cambi e ore: prova ad aumentarli.</p></section>`;
+function htmlAlternativa(alternative) {
+  const intro = `<h3><span class="linea-alternativa" aria-hidden="true"></span> Negli altri orari</h3>`;
+  if (!alternative.length) {
+    return `<section class="alternativa">${intro}<p class="nota">Quando il treno con poche corse non c'è: ` +
+      `nessuna alternativa entro i limiti di cambi e ore, prova ad aumentarli.</p></section>`;
   }
-  return `<section class="alternativa">${intro}` +
-    `<p class="totale"><strong>${formattaDurata(alternativa.minuti)}</strong> ${testoCambi(alternativa.tratte.length - 1)}</p>` +
-    htmlTratte(alternativa) + `</section>`;
+  const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
+  const blocchi = alternative.map((alt, k) => {
+    const via = stazioniCambio(stato.rete, alt).map(nome).join(", ");
+    const titolo = `Via ${via} · <strong>${formattaDurata(alt.minuti)}</strong> ${testoCambi(alt.tratte.length - 1)}`;
+    return `<details class="opzione"${k === 0 ? " open" : ""}><summary>${titolo}</summary>${htmlTratte(alt)}</details>`;
+  });
+  const nota = alternative.length > 1
+    ? `Quando il treno con poche corse non c'è. Il tempo non conta le attese ai cambi: guarda gli orari dei diretti di ogni pezzo per scegliere.`
+    : `Quando il treno con poche corse non c'è:`;
+  return `<section class="alternativa">${intro}<p class="nota">${nota}</p>${blocchi.join("")}</section>`;
 }
 
 function mostraScheda(id) {
@@ -504,7 +511,7 @@ function mostraScheda(id) {
       `<div class="azioni">${partiDaQui}</div>`;
   } else {
     alternativa = percorsoQuandoManca(etichetta, id);
-    const conTrenord = [...etichetta.tratte, ...(alternativa ? alternativa.tratte : [])]
+    const conTrenord = [...etichetta.tratte, ...(alternativa || []).flatMap((a) => a.tratte)]
       .some((t) => rete.treni[t.treno].operatore === "Trenord");
     corpo.innerHTML = comune +
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +

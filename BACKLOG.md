@@ -22,6 +22,13 @@
 - [x] 0.9.0 Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
 - [x] 0.9.1 Provenienza del treno (scheda + linea a puntini sulla mappa)
 - [x] 0.10.0 Percorsi alternativi quando il diretto ha poche corse ("Negli altri orari")
+- [ ] Modalità "real time" (scelta di Davide 27/10/2026, per il futuro): per la meta
+  scelta, tutte le soluzioni reali della giornata con orari di partenza e arrivo
+  e attese ai cambi, calcolate dagli orari delle corse già in rete.json. Si
+  potrebbe partire da un orario futuro scelto dall'utente. Motivo: senza attese
+  Torino→Racconigi sembra meglio via Carmagnola (28 min di treno), ma con gli
+  orari veri vince via Cavallermaggiore (arrivo :56, SFM :12 → 16 min di
+  attesa contro 48 a Carmagnola). La mappa resterebbe senza attese.
 
 ## In attesa
 - Niente al momento.

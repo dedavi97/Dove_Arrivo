@@ -419,19 +419,29 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   invece che da Torino) la provenienza è quella della variante usata.
 
 ## Percorsi alternativi (dalla 0.10.0)
-- `percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti)`
+- `percorsiAlternativi(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti)`
   in percorsi.js: toglie TUTTI i treni che vanno direttamente da A a B per
-  ogni tratta rara [A, B] (meno di `SOGLIA_TRATTA_RARA` diretti) e ricalcola.
+  ogni tratta rara [A, B] (meno di `SOGLIA_TRATTA_RARA` diretti) e ricalcola;
+  poi ripete vietando il cambio (`calcolaMete(..., cambiVietati)`) nelle
+  stazioni di cambio trovate e in tutte le fermate prima della meta del loro
+  ultimo treno (senza questo uscivano 3 varianti dello stesso SFM: via
+  Carmagnola, Trofarello, Villastellone). Max 3 alternative, al massimo 30 min
+  più lunghe della prima. `percorsoAlternativo` = la prima.
+- Scelta di Davide (27/10/2026): alternative SENZA attese (strada 1); gli
+  orari veri con attese sono rimandati alla futura modalità "real time".
 - app.js: `tratteRare()`, `percorsoQuandoManca()` (cambi = max(cursore, n.
   treni del percorso), cioè fino a un cambio in più, max 3; stesse ore max;
   filtro aziende rispettato), `htmlTratte()` (righe delle tratte, usata da
-  percorso e alternativa), `htmlAlternativa()` (sezione "Negli altri orari",
+  percorso e alternative), `htmlAlternativa()` (sezione "Negli altri orari":
+  una `<details>` per alternativa, "Via X · tempo · cambi", la prima aperta;
   oppure "nessuna alternativa entro i limiti").
 - Mappa: alternativa in `--alternativa` (#5fd4e8) disegnata SOPRA il
   percorso, più sottile (spesso corre sugli stessi binari: sotto non si
   vedeva); anelli dei suoi cambi azzurri; voce "altri orari" in legenda.
 - Caso reale: Torino PN → Racconigi 27 min diretto (5/giorno); negli altri
-  orari 28 min, RV fino a Carmagnola (22/giorno) + SFM (21/giorno). Test.
+  orari via Carmagnola 28 min (RV 22/giorno + SFM 21/giorno) o via
+  Cavallermaggiore 36 min. Con gli orari veri via Cavallermaggiore è ~25 min
+  più veloce (attese 16 vs 48 min). Test su entrambe.
 
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,

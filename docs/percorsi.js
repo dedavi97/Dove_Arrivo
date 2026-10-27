@@ -25,7 +25,9 @@ const SOGLIA_CAMBIO_MINUTI = 15; // valore scelto da Davide il 26/10/2026
 
 // Restituisce Map id stazione -> { minuti, tratte: [{ treno, da, a }] } (origine esclusa).
 // treno = indice in rete.treni, da/a = indici delle fermate di quel treno.
-function calcolaMete(indice, origine, maxCambi, maxMinuti) {
+// cambiVietati (facoltativo): stazioni in cui non si può cambiare treno (servono a trovare
+// alternative che cambiano altrove, vedi percorsiAlternativi).
+function calcolaMete(indice, origine, maxCambi, maxMinuti, cambiVietati = null) {
   const { rete, passaggi } = indice;
   // migliori: per ogni stazione il tempo minimo trovato finora (guida l'esplorazione);
   // candidati: tutte le etichette migliorate, giro per giro (una per numero di treni).
@@ -38,6 +40,7 @@ function calcolaMete(indice, origine, maxCambi, maxMinuti) {
     const partenze = frontiera.map((s) => [s, migliori.get(s)]);
     const nuovi = new Map();
     for (const [stazione, base] of partenze) {
+      if (giro > 1 && cambiVietati && cambiVietati.has(stazione)) continue;
       const ultima = base.tratte[base.tratte.length - 1];
       for (const { t, i } of passaggi.get(stazione) || []) {
         if (ultima && ultima.treno === t) continue; // restare sullo stesso treno non è un cambio
@@ -129,11 +132,20 @@ function direttiTratta(indice, a, b) {
   return { giorno, orari: [...perGiorno[giorno]].sort((x, y) => x - y) };
 }
 
-// Percorso alternativo per le ore in cui le tratte dirette "rare" (meno di
+// Percorsi alternativi per le ore in cui le tratte dirette "rare" (meno di
 // SOGLIA_TRATTA_RARA corse) non ci sono: si tolgono tutti i treni che vanno direttamente
 // da A a B per ogni tratta rara [A, B] e si ricalcola. ammesso(treno) = filtro aziende.
-// Restituisce l'etichetta { minuti, tratte } come calcolaMete, o null.
-function percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti) {
+// Per avere alternative davvero diverse (es. Torino→Racconigi via Carmagnola e via
+// Cavallermaggiore) dopo ognuna si vieta il cambio nelle sue stazioni di cambio e in tutte
+// le fermate dove si potrebbe salire sul suo ultimo treno (altrimenti si ottiene lo stesso
+// SFM preso a Trofarello, a Villastellone...).
+// Si tengono al massimo `quanti` alternative, non più lunghe della prima di `scartoMinuti`.
+// Il tempo non conta le attese: quale conviene dipende dagli orari dei singoli treni.
+const MAX_ALTERNATIVE = 3;
+const SCARTO_ALTERNATIVE_MINUTI = 30;
+
+function percorsiAlternativi(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti,
+  quanti = MAX_ALTERNATIVE, scartoMinuti = SCARTO_ALTERNATIVE_MINUTI) {
   const base = creaIndice(rete, ammesso);
   const esclusi = new Set();
   for (const [a, b] of rare) {
@@ -142,7 +154,25 @@ function percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMi
     }
   }
   const indice = creaIndice(rete, (treno) => ammesso(treno) && !esclusi.has(treno));
-  return calcolaMete(indice, origine, maxCambi, maxMinuti).get(meta) || null;
+  const vietati = new Set();
+  const alternative = [];
+  while (alternative.length < quanti) {
+    const alternativa = calcolaMete(indice, origine, maxCambi, maxMinuti, vietati).get(meta);
+    if (!alternativa) break;
+    if (alternative.length && alternativa.minuti > alternative[0].minuti + scartoMinuti) break;
+    const cambi = stazioniCambio(rete, alternativa);
+    if (!cambi.length) break; // senza cambi (non dovrebbe succedere: i diretti sono esclusi)
+    alternative.push(alternativa);
+    cambi.forEach((s) => vietati.add(s));
+    const ultima = alternativa.tratte[alternativa.tratte.length - 1];
+    rete.treni[ultima.treno].fermate.slice(0, ultima.a).forEach((f) => vietati.add(f.stazione));
+  }
+  return alternative;
+}
+
+// La prima alternativa, o null (vedi percorsiAlternativi).
+function percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti) {
+  return percorsiAlternativi(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti, 1)[0] || null;
 }
 
 // 401 -> "06:41"; le corse dopo mezzanotte (es. 1450) tornano a "00:10"
@@ -166,6 +196,6 @@ function formattaDurata(minuti) {
 if (typeof module !== "undefined") {
   module.exports = {
     SOGLIA_CAMBIO_MINUTI, SOGLIA_TRATTA_RARA, creaIndice, calcolaMete, restoTratta, provenienzaTratta, fermateTratta, stazioniCambio,
-    minutiTratta, direttiTratta, percorsoAlternativo, formattaOrario, fascia, formattaDurata,
+    minutiTratta, direttiTratta, percorsoAlternativo, percorsiAlternativi, formattaOrario, fascia, formattaDurata,
   };
 }

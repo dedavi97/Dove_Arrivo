@@ -274,6 +274,10 @@ body {
 .alternativa h3 .linea-alternativa { margin-right: 6px; }
 .alternativa > .nota { margin: 2px 0 8px; }
 .alternativa .cambio { color: var(--alternativa); }
+.opzione { margin: 8px 0 0; }
+.opzione summary { cursor: pointer; padding: 6px 2px; color: var(--testo-tenue); }
+.opzione summary strong { color: var(--testo); font-size: 15px; }
+.opzione .tratte { margin-top: 4px; }
 .alternativa .cambio .anello { border-color: var(--alternativa); }
 .punto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
 .punto.verde { background: var(--verde); }

@@ -5,10 +5,12 @@ Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 
 ## 0.10.0 — 27/10/2026
 - Percorsi alternativi: se una tratta del percorso ha pochi diretti al giorno
-  (meno di 6), la scheda mostra anche "Negli altri orari": il percorso
-  migliore senza quei treni, con i suoi diretti al giorno. Sulla mappa è la
-  linea azzurra. Esempio: Torino Porta Nuova → Racconigi, 5 diretti; negli
-  altri orari RV fino a Carmagnola + SFM fino a Racconigi.
+  (meno di 6), la scheda mostra anche "Negli altri orari": fino a 3 percorsi
+  senza quei treni, che cambiano in stazioni diverse, ognuno con i suoi
+  diretti al giorno. Sulla mappa sono le linee azzurre. Esempio: Torino Porta
+  Nuova → Racconigi, 5 diretti; negli altri orari via Carmagnola (28 min di
+  treno) o via Cavallermaggiore (36 min). Il tempo non conta le attese: per
+  scegliere si guardano gli orari dei diretti di ogni pezzo.
 
 ## 0.9.1 — 27/10/2026
 - Provenienza del treno: nella scheda c'è scritto da dove arriva ogni treno
