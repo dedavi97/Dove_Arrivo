@@ -31,6 +31,7 @@ class Corsa:
     inizio: int = 0  # minuti dalla mezzanotte della partenza dalla prima fermata (può superare 1440)
     partenze: list = field(default_factory=list)  # minuti dopo `inizio` della partenza da ogni fermata
     operatore: str = ""
+    forma: str = ""  # shape_id del tracciato (shapes.txt), se la fonte lo fornisce
 
 
 class _ContaByte(io.RawIOBase):
@@ -194,7 +195,7 @@ def leggi_corse(archivio, giorni, categoria_di_route, avanzamento=None, operator
         if categoria and maschera:
             # Trenord scrive "RE_11 - 2153": il numero del treno è dopo il trattino
             numero = t["trip_short_name"].split(" - ")[-1].strip()
-            viaggi[t["trip_id"]] = Corsa(numero, categoria, giorni=maschera, operatore=operatore)
+            viaggi[t["trip_id"]] = Corsa(numero, categoria, giorni=maschera, operatore=operatore, forma=t.get("shape_id") or "")
 
     stazioni, da_fermata = leggi_stazioni(archivio)
     orari = {}
@@ -223,6 +224,17 @@ def leggi_corse(archivio, giorni, categoria_di_route, avanzamento=None, operator
             if len(corsa.fermate) >= 2:
                 corse.append(corsa)
     return corse, stazioni, avvisi
+
+
+def leggi_forme(archivio, volute):
+    """{shape_id: [(lat, lon), ...] in ordine} per i soli tracciati voluti; {} se manca shapes.txt."""
+    if "shapes.txt" not in archivio.namelist() or not volute:
+        return {}
+    punti = {}
+    for r in _righe(archivio, "shapes.txt"):
+        if r["shape_id"] in volute:
+            punti.setdefault(r["shape_id"], []).append((int(r["shape_pt_sequence"]), float(r["shape_pt_lat"]), float(r["shape_pt_lon"])))
+    return {forma: [(la, lo) for _, la, lo in sorted(p)] for forma, p in punti.items()}
 
 
 def apri(percorso):

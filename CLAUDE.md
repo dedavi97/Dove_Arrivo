@@ -364,6 +364,30 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   (Il km Torino→Milano da shape è uscito 242: abbinamento al tracciato sbagliato.)
 - Dati grezzi dell'indagine: nello scratchpad della sessione, non nel repo.
 
+## Linee sui binari (dalla 0.8.0)
+- Fonte: shapes.txt Trenitalia (3720 tracciati, ~44 punti l'uno, 1 punto
+  ogni ~5 km, quasi sempre su stazioni; tutti i trip hanno shape_id).
+  Trenord non ha shapes.txt → linee dritte.
+- Scanner: `Corsa.forma` = shape_id; `gtfs.leggi_forme()`; `Letta.forme`
+  `{(operatore, shape_id): punti}`; `costruisci.tracciati()` sul treno più
+  veloce di ogni gruppo: per ogni coppia di fermate consecutive i punti tra
+  le due (`punti_intermedi`), poi `togli_punte` (punto dove si va e si torna:
+  vicini < 0,4 × andata). Tratto dubbio → [] = dritto, il resto del treno
+  resta: fermata a > 0,5 km dal tracciato, oppure percorso > 1,8 × linea
+  d'aria + 1 km (nel GTFS ci sono punti fuori posto: Firenze Campo Marte →
+  S.M. Novella 2,4 km in linea d'aria e 48 km di tracciato, Roma Tiburtina
+  → Termini, Jesi → Falconara). Con soglia 2,5 e scarto dell'intero treno
+  si perdevano 196 treni su 2082.
+- rete.json: `tracciati` = [[A, B, [[lat, lon], ...]]] con A < B (confronto
+  di stringhe, uguale in Python e JS) e punti da A verso B, solo i tratti con
+  punti intermedi; scritto una riga per tratto. `contenuto_uguale` li confronta.
+- 27/10/2026: 1262 tratti, ~3000 punti; rete.json 2,38 → 2,48 MB (gzip 284 →
+  304 KB). Nel browser: caricamento ≈0,4 s, scelta partenza + ricolore ≈7 ms.
+- Sito: `indiceTracciati()` e `lineaFermate(ids, coordinate, tracciati)` in
+  rete.js, usati per rete, percorso e prosecuzioni.
+- La "V" ad Arezzo (Firenze→Arezzo + Arezzo→Foligno) è vera: la linea lenta
+  dal Valdarno entra ad Arezzo da sud-ovest (Ponticino).
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

@@ -14,6 +14,7 @@ const stato = {
   rete: null,
   indice: null,
   perId: new Map(),
+  tracciati: new Map(),
   origine: null,
   meta: null,
   mete: new Map(),
@@ -177,7 +178,7 @@ function coordinate(id) {
 
 function disegnaRete() {
   const rete = stato.rete;
-  stratoLinee = L.polyline(segmentiUnici(rete).map(([a, b]) => [coordinate(a), coordinate(b)]), {
+  stratoLinee = L.polyline(segmentiUnici(rete).map(([a, b]) => lineaFermate([a, b], coordinate, stato.tracciati)), {
     pane: "linee",
     renderer: L.canvas({ pane: "linee" }),
     color: colore("--linea"),
@@ -243,12 +244,12 @@ function disegnaPercorso(etichetta) {
   const rete = stato.rete;
   const renderer = L.canvas({ pane: "percorso" });
   const opzioni = { pane: "percorso", renderer, interactive: false };
-  const tratti = etichetta.tratte.map((t) => fermateTratta(rete, t).map(coordinate));
+  const tratti = etichetta.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati));
   // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia.
   for (const t of etichetta.tratte) {
     const resto = [rete.treni[t.treno].fermate[t.a].stazione, ...restoTratta(rete, t)];
     if (resto.length > 1) {
-      L.polyline(resto.map(coordinate), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
+      L.polyline(lineaFermate(resto, coordinate, stato.tracciati), { ...opzioni, color: colore("--percorso"), weight: 2.5, opacity: 0.75, dashArray: "4 8" }).addTo(stratoPercorso);
     }
   }
   L.polyline(tratti, { ...opzioni, color: colore("--sfondo"), weight: 8, opacity: 0.7 }).addTo(stratoPercorso);
@@ -644,6 +645,7 @@ async function avvia() {
   stato.rete = rete;
   stato.indice = creaIndice(rete);
   stato.perId = new Map(rete.stazioni.map((s) => [s.id, s]));
+  stato.tracciati = indiceTracciati(rete);
   if (stato.imp.ricorda && stato.perId.has(memoria.origine)) stato.origine = memoria.origine;
 
   disegnaRete();

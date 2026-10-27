@@ -417,3 +417,39 @@ def test_costruisci_rete_scrive_profili_e_corse():
     (treno,) = r["treni"]
     assert treno["numero"] == "12"                                   # il più veloce per il calcolo
     assert treno["corse"] == [[600, 0, 1], [700, 1, 1]]              # ma tutte le corse negli orari
+
+
+# --- tracciati (0.8.0) ------------------------------------------------------------
+
+def test_togli_punte():
+    # dritto verso est con una punta a sud a metà strada
+    percorso = [(45.0, 7.0), (45.0, 7.1), (44.8, 7.15), (45.0, 7.2), (45.0, 7.3)]
+    assert costruisci.togli_punte(percorso) == [(45.0, 7.0), (45.0, 7.1), (45.0, 7.2), (45.0, 7.3)]
+    curva = [(45.0, 7.0), (45.1, 7.1), (45.0, 7.2)]   # curva vera, non una punta
+    assert costruisci.togli_punte(curva) == curva
+
+
+def test_punti_intermedi_tratto_dubbio_resta_dritto():
+    fermate = [(45.0, 7.0), (45.0, 7.2), (45.0, 7.4)]
+    punti = [(45.0, 7.0), (45.01, 7.1), (45.0, 7.2), (46.0, 7.3), (45.0, 7.4)]   # secondo tratto: giro enorme
+    assert costruisci.punti_intermedi(fermate, punti) == [[(45.01, 7.1)], []]
+
+
+def test_costruisci_rete_tracciati():
+    stazioni = {"1": Stazione("1", "A", 45.0, 7.0), "2": Stazione("2", "B", 45.0, 7.2)}
+    corse = [Corsa("9", "REG", [("2", 0), ("1", 20)], giorni=1, inizio=600, partenze=[0, 20],
+                   operatore="Trenitalia", forma="f")]
+    forme = {("Trenitalia", "f"): [(45.0, 7.2), (45.02, 7.15), (45.01, 7.05), (45.0, 7.0)]}
+    r = costruisci.costruisci_rete(corse, stazioni, lambda s: "Piemonte", "Piemonte",
+                                   datetime.date(2026, 10, 27), [MERCOLEDI], "test", forme=forme)
+    # salvato da "1" verso "2", quindi punti al contrario rispetto al treno
+    assert r["tracciati"] == [["1", "2", [[45.01, 7.05], [45.02, 7.15]]]]
+
+
+def test_scrivi_e_leggi_con_tracciati(tmp_path):
+    dati = _rete()
+    dati["tracciati"] = [["1", "2", [[45.05, 7.05]]]]
+    percorso = tmp_path / "rete.json"
+    rete.scrivi_rete(percorso, dati)
+    assert rete.leggi_rete(percorso) == dati
+    assert not rete.contenuto_uguale(_rete(), dati)

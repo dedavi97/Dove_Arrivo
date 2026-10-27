@@ -160,6 +160,7 @@ def esegui(solo_scansione):
         lambda s: regioni.regione_di(s.lat, s.lon, s.uic, elenco_regioni),
         PERIMETRO, oggi, giorni, attribuzioni, comune_di,
         [{k: letta.info[k] for k in ("nome", "validita_dal", "validita_al", "scaduta", "attribuzione")} for letta in lette],
+        {k: v for letta in lette for k, v in letta.forme.items()},
     )
     senza = [s["nome"] for s in nuova["stazioni"] if s["regione"] != regioni.ESTERO and "abitanti" not in s]
     if senza:

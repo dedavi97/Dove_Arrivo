@@ -16,7 +16,7 @@
   CORS). Strade da decidere con Davide: (1) piccolo "ponte" gratuito online
   (es. Cloudflare Workers) = un pezzo di server, da creare sul suo account;
   (2) solo in locale, con Avvia_Locale.bat che fa da ponte sul suo PC.
-- [ ] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
+- [x] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
 - [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
 - [ ] Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
   (es. solo Trenitalia, solo Trenord, entrambe). Richiesta di Davide 27/10/2026.

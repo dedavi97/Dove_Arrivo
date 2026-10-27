@@ -42,8 +42,11 @@ def scrivi_rete(percorso, rete):
         '"treni":[',
         ",\n".join(riga(t) for t in rete["treni"]),
         "]",
-        "}",
     ]
+    if "tracciati" in rete:
+        parti[-1] += ","
+        parti += ['"tracciati":[', ",\n".join(riga(t) for t in rete["tracciati"]), "]"]
+    parti.append("}")
     temporaneo = percorso.with_suffix(".tmp")
     percorso.parent.mkdir(parents=True, exist_ok=True)
     temporaneo.write_text("\n".join(parti) + "\n", encoding="utf-8")
@@ -79,5 +82,6 @@ def differenze(vecchia, nuova):
 
 
 def contenuto_uguale(vecchia, nuova):
-    """Vero se stazioni e treni sono identici (la data di aggiornamento non conta)."""
-    return vecchia is not None and vecchia["stazioni"] == nuova["stazioni"] and vecchia["treni"] == nuova["treni"]
+    """Vero se stazioni, treni e tracciati sono identici (la data di aggiornamento non conta)."""
+    return (vecchia is not None and vecchia["stazioni"] == nuova["stazioni"] and vecchia["treni"] == nuova["treni"]
+            and vecchia.get("tracciati") == nuova.get("tracciati"))

@@ -157,3 +157,14 @@ test("fonti: elenco con validità, avviso se scaduta, operatore per nome", () =>
   assert.strictEqual(fonteDi({ meta }, "Trenord").scaduta, true);
   assert.strictEqual(fonteDi({ meta }, undefined), null);
 });
+
+test("lineaFermate: segue i tracciati nei due versi, dritta dove mancano", () => {
+  const { indiceTracciati, lineaFermate } = require("../docs/rete.js");
+  const coord = { A: [0, 0], B: [0, 10], C: [0, 20] };
+  const tracciati = indiceTracciati({ tracciati: [["A", "B", [[1, 3], [1, 6]]]] });
+  const c = (id) => coord[id];
+  assert.deepStrictEqual(lineaFermate(["A", "B", "C"], c, tracciati), [[0, 0], [1, 3], [1, 6], [0, 10], [0, 20]]);
+  assert.deepStrictEqual(lineaFermate(["B", "A"], c, tracciati), [[0, 10], [1, 6], [1, 3], [0, 0]]);
+  assert.deepStrictEqual(lineaFermate(["C"], c, tracciati), [[0, 20]]);
+  assert.strictEqual(indiceTracciati({}).size, 0);
+});

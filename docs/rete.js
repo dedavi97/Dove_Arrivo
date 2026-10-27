@@ -73,6 +73,29 @@ function segmentiUnici(rete) {
   return [...visti.values()];
 }
 
+// Linee che seguono i binari (0.8.0): rete.tracciati = [[A, B, [[lat, lon], ...]]] con A < B e i
+// punti da A verso B. Restituisce Map "A|B" -> punti.
+function indiceTracciati(rete) {
+  const indice = new Map();
+  for (const [a, b, punti] of rete.tracciati || []) indice.set(`${a}|${b}`, punti);
+  return indice;
+}
+
+// Coordinate di una linea che passa per le fermate date (id in ordine), seguendo i tracciati
+// dove ci sono e andando dritta altrove. coordinate(id) -> [lat, lon].
+function lineaFermate(ids, coordinate, tracciati) {
+  const linea = [];
+  ids.forEach((id, k) => {
+    if (k > 0) {
+      const a = ids[k - 1];
+      const punti = a < id ? tracciati.get(`${a}|${id}`) : tracciati.get(`${id}|${a}`);
+      if (punti) linea.push(...(a < id ? punti : [...punti].reverse()));
+    }
+    linea.push(coordinate(id));
+  });
+  return linea;
+}
+
 // "S.Damiano d'Asti" -> "s damiano d asti": niente accenti, maiuscole o punteggiatura.
 function normalizzaNome(testo) {
   return String(testo)
@@ -101,6 +124,6 @@ function cercaStazioni(stazioni, testo, massimo = 8) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    ErroreRete, validaRete, caricaRete, formattaData, segmentiUnici, normalizzaNome, cercaStazioni, RETE_FORMATO_VERSIONE,
+    ErroreRete, validaRete, caricaRete, formattaData, segmentiUnici, indiceTracciati, lineaFermate, normalizzaNome, cercaStazioni, RETE_FORMATO_VERSIONE,
   };
 }

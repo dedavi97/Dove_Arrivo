@@ -76,6 +76,7 @@ class Letta:
     corse: list
     stazioni: dict
     info: dict = field(default_factory=dict)
+    forme: dict = field(default_factory=dict)  # {(operatore, shape_id): [(lat, lon), ...]}
 
 
 def prepara(fonte, avvisi, barra=None):
@@ -136,7 +137,8 @@ def leggi(fonte, percorso, giorni, oggi, avvisi, barra=None):
         "scaduta": scaduta,
         "attribuzione": fonte.attribuzione,
     }
-    return Letta(fonte, corse, stazioni, info)
+    forme = gtfs.leggi_forme(archivio, {c.forma for c in corse if c.forma})
+    return Letta(fonte, corse, stazioni, info, {(fonte.nome, f): p for f, p in forme.items()})
 
 
 def unisci(lette, avvisi, manuali=None):

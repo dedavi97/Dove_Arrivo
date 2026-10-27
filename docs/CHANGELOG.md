@@ -3,6 +3,14 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.8.0 — 27/10/2026
+- Le linee sulla mappa seguono i binari: tra due fermate passano per le
+  stazioni dove il treno non si ferma (tracciato dell'orario Trenitalia),
+  invece di andare dritte. Vale per la rete, per il percorso evidenziato e
+  per le prosecuzioni tratteggiate.
+- I pezzi di tracciato con punti fuori posto restano dritti.
+- Le linee Trenord restano dritte: il loro orario non ha il tracciato.
+
 ## 0.7.0 — 27/10/2026
 - Arrivano i treni **Trenord**: Lombardia, Malpensa Express, linee ex
   Ferrovienord e linee verso la Svizzera. 343 treni e 384 stazioni nuove

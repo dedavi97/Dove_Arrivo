@@ -1,8 +1,8 @@
 # Stato del progetto
 
-**Versione:** 0.7.0 — 27/10/2026
-**Ultima tappa:** Trenord (Lombardia) aggiunto alla rete
-**Prossimo passo:** indagine prezzi (solo report), poi 0.8.0 linee sulle stazioni intermedie
+**Versione:** 0.8.0 — 27/10/2026
+**Ultima tappa:** linee che seguono i binari
+**Prossimo passo:** da scegliere con Davide nel backlog (ore max 12, filtro aziende, percorsi alternativi, pulsante prezzo)
 
 ## Cosa funziona
 - **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 2103
@@ -17,7 +17,8 @@
 - Impostazioni, Aiuto, Informazioni (fonti con le date di validità).
 - `Aggiorna_Dati.bat` aggiorna i dati da entrambe le aziende in ~12 secondi;
   il riepilogo è diviso per fonte e segnala orari scaduti o in scadenza.
-- File dati: 2,4 MB (circa 285 KB scaricati, compressi).
+- Le linee seguono i binari (tracciato Trenitalia); quelle Trenord sono dritte.
+- File dati: 2,5 MB (circa 305 KB scaricati, compressi).
 
 ## Regole del calcolo
 - Un percorso con un cambio in più viene proposto solo se fa risparmiare

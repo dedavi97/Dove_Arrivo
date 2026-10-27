@@ -23,6 +23,8 @@ Entrambi devono essere verdi prima di ogni commit di tappa.
   vicino, nome, tabella manuale), linee e numeri Trenord, orario senza
   calendar.txt, fonte scaduta (dati vecchi tenuti + avviso), fonte non
   scaricabile (copia vecchia o avviso), niente download se la versione è uguale.
+- In `test_scanner.py` anche i tracciati: punti tra le fermate, tratti dubbi
+  dritti, punte tolte, verso dei punti, scrittura e lettura.
 - `test_versione.py` / `versione.test.js`: la versione è coerente col changelog.
 
 Ambiente verificato il 26/10/2026: Python 3.12.10 + pytest 9.1.1, Node 24.14.0.
