@@ -3,6 +3,18 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.6.0 — 27/10/2026
+- Per ogni treno del percorso la scheda dice quanti treni diretti ci sono al
+  giorno su quella tratta e a che ora partono (contando tutti i treni che
+  vanno da A a B senza cambi, non solo quello più veloce). Si usa il
+  mercoledì tipo con più corse, così i lavori di un giorno non falsano.
+- Tratte con meno di 6 diretti al giorno: avviso ⚠ "Pochi treni: controlla
+  l'orario". Esempio: Torino Porta Nuova → Racconigi, solo 5 diretti
+  (06:41, 07:20, 17:55, 18:55, 19:55).
+- Toccando una meta vicina la mappa si avvicina al percorso, che prima a
+  scala nazionale non si distingueva.
+- Il calcolo dei percorsi non cambia.
+
 ## 0.5.0 — 27/10/2026
 - Nuovo cursore "Abitanti min": mostra solo le stazioni dei comuni sopra la
   soglia scelta (da tutti fino a 500.000 abitanti); le altre spariscono dalla

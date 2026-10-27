@@ -16,8 +16,9 @@ Entrambi devono essere verdi prima di ogni commit di tappa.
 - `sito.test.js`: lettura e controllo di rete.json (anche quello pubblicato),
   date, segmenti della mappa, novità, e che `docs/CHANGELOG.md` sia uguale a `CHANGELOG.md`.
 - `percorsi.test.js`: calcolo delle mete a giri (cambi, tempo massimo, solo
-  in avanti, soglia per i cambi), tratte e colori; più un controllo sulla rete
-  reale (Torino Porta Nuova → Asti diretto).
+  in avanti, soglia per i cambi), tratte, colori, treni diretti per tratta;
+  più controlli sulla rete reale (Torino Porta Nuova → Asti diretto,
+  Torino Porta Nuova → Racconigi con i suoi 5 orari).
 - `test_versione.py` / `versione.test.js`: la versione è coerente col changelog.
 
 Ambiente verificato il 26/10/2026: Python 3.12.10 + pytest 9.1.1, Node 24.14.0.

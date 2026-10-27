@@ -337,6 +337,12 @@ body {
 .cambio { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--cambio); font-size: 13px; }
 .tratta .prosegue { grid-column: 1 / -1; color: var(--testo-tenue); font-size: 12px; }
 .tratta .prosegue::before { content: "┄ "; color: var(--percorso); }
+.diretti { grid-column: 1 / -1; font-size: 12px; color: var(--testo-tenue); }
+.diretti summary { cursor: pointer; color: var(--testo); }
+.diretti .quando { opacity: .75; }
+.diretti.rara { color: var(--giallo); }
+.diretti .avviso { font-size: 13px; }
+.nota-rara { display: block; margin-top: 2px; }
 .nota { margin: 12px 0 0; color: var(--testo-tenue); font-size: 12px; }
 .azioni { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .bottone {

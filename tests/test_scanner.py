@@ -380,3 +380,40 @@ def test_costruisci_rete_aggiunge_comune_e_abitanti():
     torino, modane = sorted(r["stazioni"], key=lambda s: s["id"])
     assert (torino["comune"], torino["abitanti"]) == ("Torino", 855654)
     assert "abitanti" not in modane   # all'estero non si cerca il comune
+
+
+# --- orari delle corse (frequenze, 0.6.0) -----------------------------------------
+
+def test_leggi_corse_tiene_giorni_inizio_e_partenze(archivio):
+    undici_nov = datetime.date(2026, 11, 11)
+    corse, _, _ = gtfs.leggi_corse(archivio, [MERCOLEDI, undici_nov], {"REG"})
+    per_numero = {c.numero: c for c in corse}
+    # "feriale" circola entrambi i giorni, "festivo" solo il 04/11 (eccezione), "soppresso" solo l'11/11
+    assert per_numero["100"].giorni == 0b11
+    assert per_numero["200"].giorni == 0b01
+    assert per_numero["300"].giorni == 0b10
+    assert per_numero["100"].inizio == 23 * 60 + 50
+    assert per_numero["100"].partenze == [0, 16, 30]   # riparte da B alle 24:06
+
+
+def test_orari_gruppo_profili_distinti_e_giorni_uniti():
+    def corsa(inizio, partenze, giorni):
+        return Corsa("1", "REG", [("A", 0), ("B", partenze[-1])], giorni=giorni, inizio=inizio, partenze=partenze)
+
+    gruppo = [corsa(600, [0, 30], 0b01), corsa(600, [0, 30], 0b10), corsa(540, [0, 35], 0b11), corsa(660, [0, 30], 0b01)]
+    profili, righe = costruisci.orari_gruppo(gruppo)
+    assert profili == [[0, 30], [0, 35]]
+    assert righe == [[540, 1, 0b11], [600, 0, 0b11], [660, 0, 0b01]]
+
+
+def test_costruisci_rete_scrive_profili_e_corse():
+    stazioni = {"1": Stazione("1", "A", 45.0, 7.0), "2": Stazione("2", "B", 45.1, 7.1)}
+    corse = [
+        Corsa("10", "REG", [("1", 0), ("2", 30)], giorni=1, inizio=600, partenze=[0, 30]),
+        Corsa("12", "REG", [("1", 0), ("2", 25)], giorni=1, inizio=700, partenze=[0, 25]),
+    ]
+    r = costruisci.costruisci_rete(corse, stazioni, lambda s: "Piemonte", "Piemonte",
+                                   datetime.date(2026, 10, 27), [MERCOLEDI], "test")
+    (treno,) = r["treni"]
+    assert treno["numero"] == "12"                                   # il più veloce per il calcolo
+    assert treno["corse"] == [[600, 0, 1], [700, 1, 1]]              # ma tutte le corse negli orari

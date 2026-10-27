@@ -142,3 +142,36 @@ test("stazioni di cambio", () => {
   assert.deepStrictEqual(P.stazioniCambio(RETE, P.calcolaMete(indice, "A", 2, 600).get("G")), ["C", "F"]);
   assert.deepStrictEqual(P.stazioniCambio(RETE, P.calcolaMete(indice, "A", 2, 600).get("B")), []);
 });
+
+test("direttiTratta: tutte le sequenze, giorno con più corse, orari di partenza da A", () => {
+  // giorni_tipo: 2. Treno 1 (A→B→C) e treno 2 (A→C, sequenza diversa) vanno entrambi da A a C.
+  const rete = {
+    meta: { giorni_tipo: ["2026-11-04", "2026-11-25"] },
+    stazioni: [],
+    treni: [
+      { ...treno("1", ["A", 0], ["B", 10], ["C", 20]), profili: [[0, 11, 20]], corse: [[600, 0, 3], [660, 0, 2]] },
+      { ...treno("2", ["A", 0], ["C", 15]), profili: [[0, 15]], corse: [[400, 0, 3]] },
+      { ...treno("3", ["C", 0], ["A", 20]), profili: [[0, 20]], corse: [[500, 0, 3]] }, // verso opposto: non conta
+    ],
+  };
+  const ind = P.creaIndice(rete);
+  // giorno 0: 400, 600; giorno 1: 400, 600, 660 → vince il giorno 1
+  assert.deepStrictEqual(P.direttiTratta(ind, "A", "C"), { giorno: 1, orari: [400, 600, 660] });
+  // da B: partenza = inizio + 11 (profilo), solo il treno 1
+  assert.deepStrictEqual(P.direttiTratta(ind, "B", "C"), { giorno: 1, orari: [611, 671] });
+  assert.deepStrictEqual(P.direttiTratta(ind, "C", "B"), { giorno: 0, orari: [] });
+  assert.strictEqual(P.direttiTratta(P.creaIndice({ meta: {}, stazioni: [], treni: [] }), "A", "C"), null);
+});
+
+test("formattaOrario", () => {
+  assert.strictEqual(P.formattaOrario(401), "06:41");
+  assert.strictEqual(P.formattaOrario(1450), "00:10");
+});
+
+test("rete reale: Torino Porta Nuova → Racconigi, 5 diretti (06:41, 07:20, 17:55, 18:55, 19:55)", () => {
+  const rete = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "data", "rete.json"), "utf8"));
+  const id = (nome) => rete.stazioni.find((s) => s.nome === nome).id;
+  const diretti = P.direttiTratta(P.creaIndice(rete), id("Torino Porta Nuova"), id("Racconigi"));
+  assert.deepStrictEqual(diretti.orari.map(P.formattaOrario), ["06:41", "07:20", "17:55", "18:55", "19:55"]);
+  assert.ok(diretti.orari.length < P.SOGLIA_TRATTA_RARA);
+});

@@ -2,7 +2,8 @@
 
 Mappa scura della rete dei treni regionali Trenitalia di tutta Italia. Scegli una stazione di partenza,
 quanti cambi al massimo e quante ore al massimo: la mappa colora le mete
-raggiungibili in base al tempo di viaggio. Cliccando una meta vedi il percorso.
+raggiungibili in base al tempo di viaggio. Cliccando una meta vedi il percorso,
+quanti treni diretti ci sono al giorno su ogni tratta e a che ora partono.
 
 Niente prezzi: il pulsante "Verifica prezzo" apre il sito Trenitalia.
 

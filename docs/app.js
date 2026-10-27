@@ -82,6 +82,24 @@ function stazioneVisibile(stazione, abitantiMin, origine) {
   return stazione.id === origine || stazione.abitanti === undefined || stazione.abitanti >= abitantiMin;
 }
 
+// Quante corse dirette fa una tratta e a che ora partono; con meno di
+// SOGLIA_TRATTA_RARA corse avvisa. Oltre 12 orari l'elenco si apre a richiesta.
+function htmlDiretti(diretti, giorniTipo) {
+  if (!diretti || !diretti.orari.length) return "";
+  const n = diretti.orari.length;
+  const orari = diretti.orari.map(formattaOrario).join(", ");
+  const quando = `<span class="quando">orari di mercoledì ${formattaData(giorniTipo[diretti.giorno]).slice(0, 5)}</span>`;
+  const titolo = `${n} ${n === 1 ? "diretto" : "diretti"} al giorno`;
+  if (n < SOGLIA_TRATTA_RARA) {
+    return `<span class="diretti rara"><span class="avviso" aria-hidden="true">⚠</span> ${titolo}: ${orari} ${quando}` +
+      `<span class="nota-rara">Pochi treni: controlla l'orario prima di partire</span></span>`;
+  }
+  if (n > 12) {
+    return `<details class="diretti"><summary>${titolo} · vedi orari</summary>${orari} ${quando}</details>`;
+  }
+  return `<span class="diretti">${titolo}: ${orari} ${quando}</span>`;
+}
+
 function testoCambi(n) {
   return n === 0 ? "diretto" : n === 1 ? "1 cambio" : `${n} cambi`;
 }
@@ -232,7 +250,11 @@ function disegnaPercorso(etichetta) {
 }
 
 // Porta il percorso in vista se esce dalla parte di mappa non coperta dalla scheda
-// (in basso su telefono, a destra su schermi larghi).
+// (in basso su telefono, a destra su schermi larghi), oppure se è così piccolo
+// rispetto alla vista (es. Torino-Racconigi vedendo tutta Italia) che non si distingue.
+const ZOOM_MAX_PERCORSO = 10;
+const SCARTO_ZOOM_PER_AVVICINARE = 2;
+
 function inquadra(limiti) {
   const scheda = document.getElementById("scheda");
   const largo = window.matchMedia("(min-width: 760px)").matches;
@@ -243,11 +265,14 @@ function inquadra(limiti) {
     mappa.containerPointToLatLng([30, 50]),
     mappa.containerPointToLatLng([dimensioni.x - margineDestro, dimensioni.y - margineBasso])
   );
-  if (visibile.contains(limiti)) return;
+  const margini = L.point(30 + margineDestro, 50 + margineBasso);
+  const zoomAdatto = Math.min(mappa.getBoundsZoom(limiti, false, margini), ZOOM_MAX_PERCORSO);
+  const troppoPiccolo = zoomAdatto - mappa.getZoom() >= SCARTO_ZOOM_PER_AVVICINARE;
+  if (visibile.contains(limiti) && !troppoPiccolo) return;
   mappa.fitBounds(limiti, {
     paddingTopLeft: [30, 50],
     paddingBottomRight: [margineDestro, margineBasso],
-    maxZoom: Math.max(mappa.getZoom(), 9),
+    maxZoom: Math.max(mappa.getZoom(), ZOOM_MAX_PERCORSO),
   });
 }
 
@@ -347,7 +372,9 @@ function mostraScheda(id) {
         `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
           `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
           `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span>` +
-          `<span class="prosegue">${prosegue}</span></li>`
+          `<span class="prosegue">${prosegue}</span>` +
+          htmlDiretti(direttiTratta(stato.indice, fermate[t.da].stazione, fermate[t.a].stazione), rete.meta.giorni_tipo) +
+          `</li>`
       );
     });
     corpo.innerHTML = comune +
@@ -606,6 +633,6 @@ if (typeof document !== "undefined") {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    changelogInHtml, escapeHtml, raggioStazione, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
+    changelogInHtml, escapeHtml, raggioStazione, htmlDiretti, testoCambi, nelPerimetro, stazioneVisibile, testoSoglia, SOGLIE_ABITANTI,
   };
 }

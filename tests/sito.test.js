@@ -120,3 +120,21 @@ test("nelPerimetro: Italia esclude solo l'estero, una regione solo sé stessa", 
   assert.ok(nelPerimetro({ regione: "Piemonte" }, "Piemonte"));
   assert.ok(!nelPerimetro({ regione: "Liguria" }, "Piemonte"));
 });
+
+test("htmlDiretti: tratta rara con avviso, normale, molti orari a scomparsa", () => {
+  global.formattaOrario = require("../docs/percorsi.js").formattaOrario;
+  global.SOGLIA_TRATTA_RARA = require("../docs/percorsi.js").SOGLIA_TRATTA_RARA;
+  global.formattaData = require("../docs/rete.js").formattaData;
+  const { htmlDiretti } = require("../docs/app.js");
+  const giorni = ["2026-11-04", "2026-11-25"];
+  const rara = htmlDiretti({ giorno: 1, orari: [401, 440, 1075, 1135, 1195] }, giorni);
+  assert.match(rara, /⚠/);
+  assert.match(rara, /5 diretti al giorno: 06:41, 07:20, 17:55, 18:55, 19:55/);
+  assert.match(rara, /Pochi treni: controlla l'orario/);
+  assert.match(rara, /mercoledì 25\/11/);
+  const normale = htmlDiretti({ giorno: 0, orari: [360, 420, 480, 540, 600, 660] }, giorni);
+  assert.doesNotMatch(normale, /⚠|<details/);
+  const molti = htmlDiretti({ giorno: 0, orari: Array.from({ length: 20 }, (_, i) => 300 + 30 * i) }, giorni);
+  assert.match(molti, /<details/);
+  assert.strictEqual(htmlDiretti(null, giorni), "");
+});

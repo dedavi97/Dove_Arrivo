@@ -26,19 +26,40 @@ def bel_nome(nome):
     return bello
 
 
-def tieni_piu_veloci(corse):
-    """Tra le corse con la stessa identica sequenza di fermate tiene la più veloce.
-
-    Le ripetizioni nell'arco della giornata (stesso percorso ogni ora) non aggiungono
-    informazioni: conta solo il tempo minimo. A parità vince il numero più basso.
-    """
-    migliori = {}
+def raggruppa_per_sequenza(corse):
+    """{sequenza di fermate: [corse con quella sequenza]}."""
+    gruppi = {}
     for c in corse:
-        chiave = tuple(s for s, _ in c.fermate)
-        attuale = migliori.get(chiave)
-        if attuale is None or (c.fermate[-1][1], _numero(c)) < (attuale.fermate[-1][1], _numero(attuale)):
-            migliori[chiave] = c
-    return list(migliori.values())
+        gruppi.setdefault(tuple(s for s, _ in c.fermate), []).append(c)
+    return gruppi
+
+
+def piu_veloce(gruppo):
+    """Per il calcolo dei percorsi conta solo il tempo minimo. A parità vince il numero più basso."""
+    return min(gruppo, key=lambda c: (c.fermate[-1][1], _numero(c)))
+
+
+def tieni_piu_veloci(corse):
+    """Tra le corse con la stessa identica sequenza di fermate tiene la più veloce."""
+    return [piu_veloce(g) for g in raggruppa_per_sequenza(corse).values()]
+
+
+def orari_gruppo(gruppo):
+    """Orari di tutte le corse con la stessa sequenza, in forma compatta: (profili, corse).
+
+    profili = liste distinte di "minuti dopo la partenza" in cui si riparte da ogni fermata;
+    corse = [inizio (minuti dalla mezzanotte), indice del profilo, giorni (bit per giorno tipo)],
+    ordinate per inizio. La stessa corsa in giorni diversi diventa una riga sola (bit uniti).
+    """
+    profili, indice_profilo, giorni_di = [], {}, {}
+    for c in gruppo:
+        chiave = tuple(c.partenze)
+        if chiave not in indice_profilo:
+            indice_profilo[chiave] = len(profili)
+            profili.append(list(chiave))
+        riga = (c.inizio, indice_profilo[chiave])
+        giorni_di[riga] = giorni_di.get(riga, 0) | c.giorni
+    return profili, [[inizio, p, g] for (inizio, p), g in sorted(giorni_di.items())]
 
 
 def _numero(corsa):
@@ -50,7 +71,9 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
     regioni = {i: regione_di(stazioni[i]) for i in {s for c in corse for s, _ in c.fermate}}
     dentro = (lambda r: r != ESTERO) if perimetro == ITALIA else (lambda r: r == perimetro)
     nel_perimetro = [c for c in corse if any(dentro(regioni[s]) for s, _ in c.fermate)]
-    scelte = sorted(tieni_piu_veloci(nel_perimetro), key=lambda c: (_numero(c), c.numero))
+    gruppi = list(raggruppa_per_sequenza(nel_perimetro).values())
+    gruppi.sort(key=lambda g: (_numero(piu_veloce(g)), piu_veloce(g).numero))
+    scelte = [piu_veloce(g) for g in gruppi]
     usate = sorted({s for c in scelte for s, _ in c.fermate}, key=lambda i: bel_nome(stazioni[i].nome))
 
     rete = {
@@ -65,16 +88,21 @@ def costruisci_rete(corse, stazioni, regione_di, perimetro, data_aggiornamento, 
             "fonte": fonte,
         },
         "stazioni": [_stazione(stazioni[i], regioni[i], comune_di) for i in usate],
-        "treni": [
-            {
-                "numero": c.numero,
-                "categoria": c.categoria,
-                "fermate": [{"stazione": s, "minuti_dalla_partenza": m} for s, m in c.fermate],
-            }
-            for c in scelte
-        ],
+        "treni": [_treno(g) for g in gruppi],
     }
     return rete
+
+
+def _treno(gruppo):
+    c = piu_veloce(gruppo)
+    profili, corse = orari_gruppo(gruppo)
+    return {
+        "numero": c.numero,
+        "categoria": c.categoria,
+        "fermate": [{"stazione": s, "minuti_dalla_partenza": m} for s, m in c.fermate],
+        "profili": profili,
+        "corse": corse,
+    }
 
 
 def _stazione(s, regione, comune_di):

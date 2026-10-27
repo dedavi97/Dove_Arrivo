@@ -1,8 +1,8 @@
 # Stato del progetto
 
-**Versione:** 0.5.0 — 27/10/2026
-**Ultima funzione:** filtro stazioni per abitanti del comune
-**Prossimo passo:** da decidere con Davide (vedi BACKLOG.md)
+**Versione:** 0.6.0 — 27/10/2026
+**Ultima funzione:** frequenza dei treni diretti nella scheda
+**Prossimo passo:** 0.7.0 Trenord — prima indagine e report a Davide
 
 ## Cosa funziona
 - **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 1714
@@ -12,10 +12,12 @@
   comune (le stazioni sotto soglia spariscono). Mete colorate per tempo
   (verde, giallo, rosso), le altre spente; legenda sempre visibile.
 - Toccando una meta: comune e abitanti, treni, cambi, tempo totale, dove
-  prosegue ogni treno; percorso evidenziato, prosecuzioni tratteggiate, cambi
+  prosegue ogni treno, quanti diretti ci sono al giorno su ogni tratta e a
+  che ora (avviso ⚠ se sono meno di 6); percorso evidenziato, prosecuzioni tratteggiate, cambi
   segnati con un anello viola; "Verifica prezzo" apre Trenitalia, "Parti da qui".
 - Impostazioni (ricorda partenza e limiti, mostra linee), Aiuto, Informazioni.
 - Provato in formato telefono e computer.
+- File dati: 2,0 MB (circa 240 KB scaricati, compressi).
 - `Aggiorna_Dati.bat` aggiorna i dati in ~8 secondi (la prima volta scarica
   anche i confini dei comuni, ~36 MB).
 

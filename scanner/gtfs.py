@@ -23,7 +23,10 @@ class Stazione:
 class Corsa:
     numero: str
     categoria: str
-    fermate: list = field(default_factory=list)  # [(id stazione, minuti dalla partenza)]
+    fermate: list = field(default_factory=list)  # [(id stazione, minuti dalla partenza)] - arrivi, per il calcolo
+    giorni: int = 0  # bit k acceso = circola nel k-esimo giorno tipo
+    inizio: int = 0  # minuti dalla mezzanotte della partenza dalla prima fermata (può superare 1440)
+    partenze: list = field(default_factory=list)  # minuti dopo `inizio` della partenza da ogni fermata
 
 
 class _ContaByte(io.RawIOBase):
@@ -97,6 +100,11 @@ def scegli_giorni_tipo(oggi, inizio, fine, quanti=4, settimane_tra_giorni=3):
 
 def servizi_attivi(archivio, giorni):
     """Servizi attivi in almeno uno dei giorni."""
+    return set().union(*servizi_per_giorno(archivio, giorni))
+
+
+def servizi_per_giorno(archivio, giorni):
+    """Per ogni giorno (stesso ordine), l'insieme dei servizi attivi."""
     testi = {g.strftime("%Y%m%d"): GIORNI[g.weekday()] for g in giorni}
     attivi = {testo: set() for testo in testi}
     for c in _righe(archivio, "calendar.txt"):
@@ -109,7 +117,7 @@ def servizi_attivi(archivio, giorni):
                 attivi[d["date"]].add(d["service_id"])
             else:
                 attivi[d["date"]].discard(d["service_id"])
-    return set().union(*attivi.values())
+    return list(attivi.values())
 
 
 def leggi_stazioni(archivio):
@@ -129,12 +137,13 @@ def leggi_stazioni(archivio):
 def leggi_corse(archivio, giorni, categorie, avanzamento=None):
     """Corse attive in almeno uno dei giorni, delle sole categorie volute. Restituisce (corse, stazioni, avvisi)."""
     categoria_di = {r["route_id"]: r["route_short_name"].split("_")[-1] for r in _righe(archivio, "routes.txt")}
-    attivi = servizi_attivi(archivio, giorni)
+    per_giorno = servizi_per_giorno(archivio, giorni)
     viaggi = {}
     for t in _righe(archivio, "trips.txt"):
         categoria = categoria_di.get(t["route_id"])
-        if categoria in categorie and t["service_id"] in attivi:
-            viaggi[t["trip_id"]] = Corsa(t["trip_short_name"], categoria)
+        maschera = sum(1 << k for k, attivi in enumerate(per_giorno) if t["service_id"] in attivi)
+        if categoria in categorie and maschera:
+            viaggi[t["trip_id"]] = Corsa(t["trip_short_name"], categoria, giorni=maschera)
 
     stazioni, da_fermata = leggi_stazioni(archivio)
     orari = {}
@@ -147,6 +156,7 @@ def leggi_corse(archivio, giorni, categorie, avanzamento=None):
         corsa = viaggi[trip_id]
         righe.sort(key=lambda r: int(r["stop_sequence"]))
         partenza = _minuti(righe[0]["departure_time"] or righe[0]["arrival_time"])
+        corsa.inizio = partenza
         precedente = 0
         for i, r in enumerate(righe):
             # Si usa l'arrivo in ogni fermata (la partenza per la prima): A→B = arrivo B − arrivo A.
@@ -156,6 +166,7 @@ def leggi_corse(archivio, giorni, categorie, avanzamento=None):
                 avvisi.append(f"treno {corsa.numero}: orari che tornano indietro a {stazioni[da_fermata[r['stop_id']]].nome}, scartato")
                 break
             corsa.fermate.append((da_fermata[r["stop_id"]], minuti))
+            corsa.partenze.append(_minuti(r["departure_time"] or r["arrival_time"]) - partenza)
             precedente = minuti
         else:
             if len(corsa.fermate) >= 2:

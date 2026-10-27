@@ -34,6 +34,8 @@ della meta scelta, pulsante "Verifica prezzo" verso Trenitalia. Niente prezzi.
   `abitanti` (solo stazioni italiane: le estere non li hanno). Campi aggiunti
   senza cambiare `formato_versione` (chi non li conosce li ignora).
 - `treni`: numero, categoria, fermate in ordine `[{stazione, minuti_dalla_partenza}]`.
+  Dalla 0.6.0 anche `profili` e `corse` (orari di tutte le corse con quella
+  sequenza di fermate, vedi "Frequenze"). Sempre `formato_versione` 1.
 - Un solo punto del codice legge/scrive il file (uno in Python, uno in JS).
   Formato sconosciuto o versione diversa → messaggio chiaro, nessuna conversione.
 
@@ -102,6 +104,18 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   `.../#/search-results?cid=...&handoff=true&referrer=...` → **nessuna stazione
   nell'URL**. Il pulsante "Verifica prezzo" aprirà la ricerca e mostrerà
   partenza/arrivo da copiare.
+
+## Decisioni del 27/10/2026 (Davide, handoff unico)
+- Prezzi: in futuro SOLO il prezzo totale del biglietto unico per il viaggio
+  intero. Niente confronto con la somma delle tratte.
+- Filtro/colori per prezzo solo se si trova un sistema affidabile.
+- Linee sui binari: solo versione semplice (passare per le stazioni
+  intermedie del tracciato GTFS, shapes.txt). Niente curve da OpenStreetMap.
+- La regola "si ignorano orari e attese" resta, ma la scheda deve dire
+  QUANTI treni diretti ci sono e A CHE ORA (fatto nella 0.6.0).
+- Più avanti: alleggerire l'interfaccia (non ora).
+- Piano: 0.6.0 frequenze → 0.7.0 Trenord (prima indagine + report, poi ok)
+  → indagine prezzi (solo report) → 0.8.0 linee sulle stazioni intermedie.
 
 ## Decisioni del 26/10/2026 (Davide)
 - Fonte dati = orario Trenitalia GTFS (deryclem). ViaggiaTreno abbandonato.
@@ -205,6 +219,32 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   (cambi possibili) con anello viola se servono.
 - Stazioni visibili per soglia (27/10/2026): 5k → 1244, 20k → 648,
   100k → 239, 500k → 108.
+
+## Frequenze dei diretti (dalla 0.6.0)
+- Lo scanner tiene, per ogni corsa: `giorni` (bit k = circola nel k-esimo
+  giorno tipo), `inizio` (minuti dalla mezzanotte alla prima fermata, anche
+  > 1440) e `partenze` (minuti dopo l'inizio della PARTENZA da ogni fermata;
+  `fermate` resta sugli arrivi per il calcolo).
+- Per ogni treno di rete.json (= una sequenza di fermate, col tempo del più
+  veloce): `profili` = liste distinte di partenze; `corse` = `[inizio,
+  indice profilo, giorni]` ordinate per inizio; la stessa corsa in più giorni
+  è una riga sola (bit uniti). `costruisci.orari_gruppo()`.
+- Peso: rete.json 1,62 → 1,98 MB (gzip ≈140 → 240 KB).
+- Sito: `direttiTratta(indice, A, B)` in percorsi.js raccoglie TUTTI i treni
+  con A prima di B (qualsiasi sequenza: es. RV + SFM), orari di partenza da A
+  per giorno tipo, sceglie il giorno con più corse. `SOGLIA_TRATTA_RARA = 6`:
+  sotto, avviso ⚠ "Pochi treni". >12 orari: elenco a scomparsa (`<details>`).
+- Verifica sul GTFS (27/10/2026): Torino PN → Racconigi 5 diretti in tutti e 4
+  i mercoledì: 06:41 (SFM 26755), 07:20 (RV 3215), 17:55 (RV 3207),
+  18:55 (RV 3107), 19:55 (RV 3109). C'è un test sul file reale.
+- `inquadra()`: oltre a quando il percorso esce dalla vista, avvicina la mappa
+  se lo zoom adatto al percorso supera quello attuale di ≥2 (max zoom 10).
+  Motivo: sul telefono l'Italia intera è a zoom 5 e Torino–Racconigi non si vedeva.
+- Prove: Edge headless con `--dump-dom` + pagina di prova che scrive in un
+  `<pre>` valori letti con `iframe.contentWindow.eval("mappa")` (misure di
+  zoom/dimensioni). Il `--screenshot` diretto di una finestra di 1440 px può
+  mostrare la mappa più rimpicciolita (la finestra headless cambia misura dopo
+  il caricamento): per foto affidabili usare sempre l'iframe a misura fissa.
 
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,

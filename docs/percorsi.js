@@ -89,6 +89,44 @@ function minutiTratta(rete, tratta) {
   return f[tratta.a].minuti_dalla_partenza - f[tratta.da].minuti_dalla_partenza;
 }
 
+// Una tratta con meno di queste corse dirette al giorno è "rara": la scheda avvisa.
+const SOGLIA_TRATTA_RARA = 6;
+
+// Tutti i treni che vanno da A a B senza cambi, qualunque sia la loro sequenza di
+// fermate (es. RV + SFM). Per ogni giorno tipo si raccolgono gli orari di partenza
+// da A e si sceglie il giorno con più corse, così i lavori di un giorno non falsano.
+// Restituisce { giorno: indice in meta.giorni_tipo, orari: [minuti dalla mezzanotte] }
+// oppure null se il file dati non ha gli orari (versioni precedenti alla 0.6.0).
+function direttiTratta(indice, a, b) {
+  const { rete, passaggi } = indice;
+  const nGiorni = ((rete.meta && rete.meta.giorni_tipo) || []).length;
+  if (!nGiorni) return null;
+  const perGiorno = Array.from({ length: nGiorni }, () => new Set());
+  let conOrari = false;
+  for (const { t, i } of passaggi.get(a) || []) {
+    const treno = rete.treni[t];
+    if (!treno.corse) continue;
+    conOrari = true;
+    if (!treno.fermate.some((f, k) => k > i && f.stazione === b)) continue;
+    for (const [inizio, profilo, giorni] of treno.corse) {
+      const partenza = inizio + treno.profili[profilo][i];
+      for (let g = 0; g < nGiorni; g++) if (giorni & (1 << g)) perGiorno[g].add(partenza);
+    }
+  }
+  if (!conOrari) return null;
+  let giorno = 0;
+  perGiorno.forEach((orari, g) => {
+    if (orari.size > perGiorno[giorno].size) giorno = g;
+  });
+  return { giorno, orari: [...perGiorno[giorno]].sort((x, y) => x - y) };
+}
+
+// 401 -> "06:41"; le corse dopo mezzanotte (es. 1450) tornano a "00:10"
+function formattaOrario(minuti) {
+  const m = ((minuti % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
 // <1h verde, 1-2h giallo, >2h rosso
 function fascia(minuti) {
   return minuti < 60 ? "verde" : minuti <= 120 ? "giallo" : "rosso";
@@ -102,5 +140,8 @@ function formattaDurata(minuti) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { SOGLIA_CAMBIO_MINUTI, creaIndice, calcolaMete, restoTratta, fermateTratta, stazioniCambio, minutiTratta, fascia, formattaDurata };
+  module.exports = {
+    SOGLIA_CAMBIO_MINUTI, SOGLIA_TRATTA_RARA, creaIndice, calcolaMete, restoTratta, fermateTratta, stazioniCambio,
+    minutiTratta, direttiTratta, formattaOrario, fascia, formattaDurata,
+  };
 }
