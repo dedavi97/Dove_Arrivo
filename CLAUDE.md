@@ -418,6 +418,21 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   Se un treno ha varianti (es. RV 2115 che nei giorni di lavori parte da Asti
   invece che da Torino) la provenienza è quella della variante usata.
 
+## Percorsi alternativi (dalla 0.10.0)
+- `percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti)`
+  in percorsi.js: toglie TUTTI i treni che vanno direttamente da A a B per
+  ogni tratta rara [A, B] (meno di `SOGLIA_TRATTA_RARA` diretti) e ricalcola.
+- app.js: `tratteRare()`, `percorsoQuandoManca()` (cambi = max(cursore, n.
+  treni del percorso), cioè fino a un cambio in più, max 3; stesse ore max;
+  filtro aziende rispettato), `htmlTratte()` (righe delle tratte, usata da
+  percorso e alternativa), `htmlAlternativa()` (sezione "Negli altri orari",
+  oppure "nessuna alternativa entro i limiti").
+- Mappa: alternativa in `--alternativa` (#5fd4e8) disegnata SOPRA il
+  percorso, più sottile (spesso corre sugli stessi binari: sotto non si
+  vedeva); anelli dei suoi cambi azzurri; voce "altri orari" in legenda.
+- Caso reale: Torino PN → Racconigi 27 min diretto (5/giorno); negli altri
+  orari 28 min, RV fino a Carmagnola (22/giorno) + SFM (21/giorno). Test.
+
 ## Calcolo e interfaccia (dalla 0.3.0)
 - `docs/percorsi.js` (funzioni pure, testate in Node): `creaIndice`,
   `calcolaMete(indice, origine, maxCambi, maxMinuti)` a giri come da

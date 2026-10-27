@@ -129,6 +129,22 @@ function direttiTratta(indice, a, b) {
   return { giorno, orari: [...perGiorno[giorno]].sort((x, y) => x - y) };
 }
 
+// Percorso alternativo per le ore in cui le tratte dirette "rare" (meno di
+// SOGLIA_TRATTA_RARA corse) non ci sono: si tolgono tutti i treni che vanno direttamente
+// da A a B per ogni tratta rara [A, B] e si ricalcola. ammesso(treno) = filtro aziende.
+// Restituisce l'etichetta { minuti, tratte } come calcolaMete, o null.
+function percorsoAlternativo(rete, ammesso, origine, meta, rare, maxCambi, maxMinuti) {
+  const base = creaIndice(rete, ammesso);
+  const esclusi = new Set();
+  for (const [a, b] of rare) {
+    for (const { t, i } of base.passaggi.get(a) || []) {
+      if (rete.treni[t].fermate.some((f, k) => k > i && f.stazione === b)) esclusi.add(rete.treni[t]);
+    }
+  }
+  const indice = creaIndice(rete, (treno) => ammesso(treno) && !esclusi.has(treno));
+  return calcolaMete(indice, origine, maxCambi, maxMinuti).get(meta) || null;
+}
+
 // 401 -> "06:41"; le corse dopo mezzanotte (es. 1450) tornano a "00:10"
 function formattaOrario(minuti) {
   const m = ((minuti % 1440) + 1440) % 1440;
@@ -150,6 +166,6 @@ function formattaDurata(minuti) {
 if (typeof module !== "undefined") {
   module.exports = {
     SOGLIA_CAMBIO_MINUTI, SOGLIA_TRATTA_RARA, creaIndice, calcolaMete, restoTratta, provenienzaTratta, fermateTratta, stazioniCambio,
-    minutiTratta, direttiTratta, formattaOrario, fascia, formattaDurata,
+    minutiTratta, direttiTratta, percorsoAlternativo, formattaOrario, fascia, formattaDurata,
   };
 }

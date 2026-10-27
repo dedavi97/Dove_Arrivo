@@ -184,3 +184,31 @@ test("creaIndice con filtro: i treni esclusi non si usano, gli indici restano", 
   assert.strictEqual(mete.get("C").minuti, 50);              // solo col REG 1
   assert.strictEqual(mete.get("C").tratte[0].treno, 0);      // indice di rete.treni
 });
+
+test("percorsoAlternativo: senza i treni della tratta rara si passa dal cambio", () => {
+  const rete = {
+    stazioni: [],
+    treni: [
+      treno("D", ["A", 0], ["X", 27]),               // diretto raro
+      treno("E", ["Z", 0], ["A", 10], ["X", 40]),    // altro treno che fa A→X: escluso anche lui
+      treno("1", ["A", 0], ["B", 21]),
+      treno("2", ["B", 0], ["X", 7]),
+    ],
+  };
+  const tutti = () => true;
+  const alt = P.percorsoAlternativo(rete, tutti, "A", "X", [["A", "X"]], 1, 600);
+  assert.strictEqual(alt.minuti, 28);
+  assert.deepStrictEqual(alt.tratte.map((t) => rete.treni[t.treno].numero), ["1", "2"]);
+  assert.strictEqual(P.percorsoAlternativo(rete, tutti, "A", "X", [["A", "X"]], 0, 600), null); // senza cambi non c'è
+  assert.strictEqual(P.percorsoAlternativo(rete, (t) => t.numero !== "2", "A", "X", [["A", "X"]], 1, 600), null);
+});
+
+test("rete reale: Torino Porta Nuova → Racconigi, alternativa con cambio a Carmagnola", () => {
+  const rete = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "data", "rete.json"), "utf8"));
+  const id = (nome) => rete.stazioni.find((s) => s.nome === nome).id;
+  const alt = P.percorsoAlternativo(rete, () => true, id("Torino Porta Nuova"), id("Racconigi"),
+    [[id("Torino Porta Nuova"), id("Racconigi")]], 1, 360);
+  assert.ok(alt && alt.tratte.length === 2 && alt.minuti < 45);
+  const cambio = rete.treni[alt.tratte[1].treno].fermate[alt.tratte[1].da].stazione;
+  assert.strictEqual(rete.stazioni.find((s) => s.id === cambio).nome, "Carmagnola");
+});

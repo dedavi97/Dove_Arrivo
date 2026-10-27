@@ -271,15 +271,21 @@ function colora() {
   anelliCambio.forEach((anello) => anello.setRadius(r + 5).bringToFront());
 }
 
-function disegnaPercorso(etichetta) {
+function disegnaPercorso(etichetta, alternativa) {
   stratoPercorso.clearLayers();
   anelliCambio = [];
   document.getElementById("legenda-cambio").hidden = true;
+  document.getElementById("legenda-alternativa").hidden = true;
   if (!etichetta) return;
   const rete = stato.rete;
   const renderer = L.canvas({ pane: "percorso" });
   const opzioni = { pane: "percorso", renderer, interactive: false };
   const tratti = etichetta.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati));
+  // Alternativa per gli altri orari: spesso corre sugli stessi binari del percorso, quindi si
+  // disegna sopra di lui, più sottile e di un altro colore (vedi sotto, dopo il percorso).
+  const trattiAlternativa = alternativa
+    ? alternativa.tratte.map((t) => lineaFermate(fermateTratta(rete, t), coordinate, stato.tracciati))
+    : [];
   // Prosecuzione tratteggiata di ogni treno usato, dalla stazione dove lo si lascia; la
   // provenienza (fermate prima di dove si sale) a puntini, più tenue.
   for (const t of etichetta.tratte) {
@@ -295,17 +301,26 @@ function disegnaPercorso(etichetta) {
   }
   L.polyline(tratti, { ...opzioni, color: colore("--sfondo"), weight: 8, opacity: 0.7 }).addTo(stratoPercorso);
   L.polyline(tratti, { ...opzioni, color: colore("--percorso"), weight: 4 }).addTo(stratoPercorso);
+  if (trattiAlternativa.length) {
+    L.polyline(trattiAlternativa, { ...opzioni, color: colore("--sfondo"), weight: 5, opacity: 0.5 }).addTo(stratoPercorso);
+    L.polyline(trattiAlternativa, { ...opzioni, color: colore("--alternativa"), weight: 2.5 }).addTo(stratoPercorso);
+    document.getElementById("legenda-alternativa").hidden = false;
+  }
   // Anelli sulle stazioni di cambio, sopra i pallini (stesso livello delle stazioni).
   const r = raggioStazione(mappa.getZoom()) + 5;
-  for (const id of stazioniCambio(rete, etichetta)) {
+  const cambi = [
+    ...stazioniCambio(rete, etichetta).map((id) => [id, "--cambio"]),
+    ...(alternativa ? stazioniCambio(rete, alternativa).map((id) => [id, "--alternativa"]) : []),
+  ];
+  for (const [id, tinta] of cambi) {
     const anello = L.circleMarker(coordinate(id), {
       pane: "stazioni", renderer: rendererStazioni, interactive: false,
-      radius: r, color: colore("--cambio"), weight: 3, fill: false,
+      radius: r, color: colore(tinta), weight: 3, fill: false,
     });
     anelliCambio.push(anello.addTo(stratoPercorso));
   }
-  document.getElementById("legenda-cambio").hidden = !anelliCambio.length;
-  inquadra(L.latLngBounds(tratti.flat()));
+  document.getElementById("legenda-cambio").hidden = !stazioniCambio(rete, etichetta).length;
+  inquadra(L.latLngBounds([...tratti.flat(), ...trattiAlternativa.flat()]));
 }
 
 // Porta il percorso in vista se esce dalla parte di mappa non coperta dalla scheda
@@ -396,6 +411,77 @@ function tocca(id) {
 
 // ---------------------------------------------------------------- scheda della meta
 
+// Elenco delle tratte di un percorso: treno, da→a, durata, operatore, provenienza,
+// prosecuzione, diretti al giorno, avviso orario scaduto. Serve al percorso e all'alternativa.
+function htmlTratte(etichetta) {
+  const rete = stato.rete;
+  const nome = (sid) => escapeHtml(stato.perId.get(sid).nome);
+  const righe = [];
+  etichetta.tratte.forEach((t, k) => {
+    const treno = rete.treni[t.treno];
+    const fermate = treno.fermate;
+    if (k > 0) righe.push(`<li class="cambio"><i class="anello" aria-hidden="true"></i> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
+    const resto = restoTratta(rete, t);
+    const prima = provenienzaTratta(rete, t);
+    const arriva = prima.length
+      ? `arriva da ${nome(prima[0])}` + (prima.length > 1 ? ` (${prima.length} fermate prima)` : "")
+      : "parte da qui";
+    const prosegue = (treno.operatore ? `${escapeHtml(treno.operatore)} · ` : "") + `${arriva} · ` + (resto.length
+      ? `prosegue per ${nome(resto[resto.length - 1])}` +
+        (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "")
+      : "termina qui");
+    const fonte = fonteDi(rete, treno.operatore);
+    const scaduta = fonte && fonte.scaduta
+      ? `<span class="diretti rara"><span class="avviso" aria-hidden="true">⚠</span> Orario ${escapeHtml(fonte.nome)} ` +
+        `scaduto il ${formattaData(fonte.validita_al)}: questi dati sono vecchi, controlla l'orario nuovo</span>`
+      : "";
+    righe.push(
+      `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
+        `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
+        `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span>` +
+        `<span class="prosegue">${prosegue}</span>` +
+        htmlDiretti(direttiTratta(stato.indice, fermate[t.da].stazione, fermate[t.a].stazione), rete.meta.giorni_tipo) +
+        scaduta +
+        `</li>`
+    );
+  });
+  return `<ol class="tratte">${righe.join("")}</ol>`;
+}
+
+// Tratte del percorso con meno di SOGLIA_TRATTA_RARA diretti al giorno: [[A, B], ...].
+function tratteRare(etichetta) {
+  return etichetta.tratte
+    .map((t) => {
+      const f = stato.rete.treni[t.treno].fermate;
+      return [f[t.da].stazione, f[t.a].stazione];
+    })
+    .filter(([a, b]) => {
+      const diretti = direttiTratta(stato.indice, a, b);
+      return diretti && diretti.orari.length < SOGLIA_TRATTA_RARA;
+    });
+}
+
+// Se il percorso ha tratte rare: il percorso migliore senza i loro treni (null se non c'è
+// entro i limiti), con al massimo un cambio in più. undefined se non serve un'alternativa.
+function percorsoQuandoManca(etichetta, meta) {
+  const rare = tratteRare(etichetta);
+  if (!rare.length) return undefined;
+  const maxCambi = Math.min(3, Math.max(stato.maxCambi, etichetta.tratte.length));
+  return percorsoAlternativo(stato.rete, (t) => aziendaAmmessa(t, stato.imp.spente), stato.origine, meta,
+    rare, maxCambi, stato.maxOre * 60);
+}
+
+function htmlAlternativa(alternativa) {
+  const intro = `<h3><span class="linea-alternativa" aria-hidden="true"></span> Negli altri orari</h3>` +
+    `<p class="nota">Quando il treno con poche corse non c'è:</p>`;
+  if (!alternativa) {
+    return `<section class="alternativa">${intro}<p class="nota">Nessuna alternativa entro i limiti di cambi e ore: prova ad aumentarli.</p></section>`;
+  }
+  return `<section class="alternativa">${intro}` +
+    `<p class="totale"><strong>${formattaDurata(alternativa.minuti)}</strong> ${testoCambi(alternativa.tratte.length - 1)}</p>` +
+    htmlTratte(alternativa) + `</section>`;
+}
+
 function mostraScheda(id) {
   stato.meta = id;
   const rete = stato.rete;
@@ -408,6 +494,7 @@ function mostraScheda(id) {
     ? `<p class="comune">Comune di ${escapeHtml(stazione.comune)} · ${stazione.abitanti.toLocaleString("it-IT")} abitanti</p>`
     : "";
   const partiDaQui = `<button type="button" class="bottone" data-azione="parti">Parti da qui</button>`;
+  let alternativa;
 
   if (!etichetta) {
     const cambi = stato.maxCambi === 0 ? "senza cambi" : `con al massimo ${testoCambi(stato.maxCambi)}`;
@@ -416,39 +503,13 @@ function mostraScheda(id) {
       `e ${formattaDurata(stato.maxOre * 60)} di treno.</p>` +
       `<div class="azioni">${partiDaQui}</div>`;
   } else {
-    const righe = [];
-    etichetta.tratte.forEach((t, k) => {
-      const treno = rete.treni[t.treno];
-      const fermate = treno.fermate;
-      if (k > 0) righe.push(`<li class="cambio"><i class="anello" aria-hidden="true"></i> Cambio a ${nome(fermate[t.da].stazione)}</li>`);
-      const resto = restoTratta(rete, t);
-      const prima = provenienzaTratta(rete, t);
-      const arriva = prima.length
-        ? `arriva da ${nome(prima[0])}` + (prima.length > 1 ? ` (${prima.length} fermate prima)` : "")
-        : "parte da qui";
-      const prosegue = (treno.operatore ? `${escapeHtml(treno.operatore)} · ` : "") + `${arriva} · ` + (resto.length
-        ? `prosegue per ${nome(resto[resto.length - 1])}` +
-          (resto.length > 1 ? ` (altre ${resto.length} fermate)` : "")
-        : "termina qui");
-      const fonte = fonteDi(rete, treno.operatore);
-      const scaduta = fonte && fonte.scaduta
-        ? `<span class="diretti rara"><span class="avviso" aria-hidden="true">⚠</span> Orario ${escapeHtml(fonte.nome)} ` +
-          `scaduto il ${formattaData(fonte.validita_al)}: questi dati sono vecchi, controlla l'orario nuovo</span>`
-        : "";
-      righe.push(
-        `<li class="tratta"><span class="treno">${escapeHtml(treno.categoria)} ${escapeHtml(treno.numero)}</span>` +
-          `<span class="da-a">${nome(fermate[t.da].stazione)} → ${nome(fermate[t.a].stazione)}</span>` +
-          `<span class="durata">${formattaDurata(minutiTratta(rete, t))}</span>` +
-          `<span class="prosegue">${prosegue}</span>` +
-          htmlDiretti(direttiTratta(stato.indice, fermate[t.da].stazione, fermate[t.a].stazione), rete.meta.giorni_tipo) +
-          scaduta +
-          `</li>`
-      );
-    });
-    const conTrenord = etichetta.tratte.some((t) => rete.treni[t.treno].operatore === "Trenord");
+    alternativa = percorsoQuandoManca(etichetta, id);
+    const conTrenord = [...etichetta.tratte, ...(alternativa ? alternativa.tratte : [])]
+      .some((t) => rete.treni[t.treno].operatore === "Trenord");
     corpo.innerHTML = comune +
       `<p class="totale"><strong>${formattaDurata(etichetta.minuti)}</strong> ${testoCambi(etichetta.tratte.length - 1)}</p>` +
-      `<ol class="tratte">${righe.join("")}</ol>` +
+      htmlTratte(etichetta) +
+      (alternativa === undefined ? "" : htmlAlternativa(alternativa)) +
       `<div class="azioni">` +
       `<a class="bottone primario" href="${URL_TRENITALIA}" target="_blank" rel="noopener">Verifica prezzo</a>` +
       (conTrenord ? `<a class="bottone" href="${URL_TRENORD}" target="_blank" rel="noopener">Sito Trenord</a>` : "") +
@@ -462,7 +523,7 @@ function mostraScheda(id) {
   document.getElementById("scheda").hidden = false;
   document.getElementById("suggerimento").hidden = true; // con la scheda aperta non serve e coprirebbe la mappa
   colora();
-  disegnaPercorso(etichetta);
+  disegnaPercorso(etichetta, alternativa);
 }
 
 function chiudiScheda() {

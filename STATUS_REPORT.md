@@ -1,8 +1,8 @@
 # Stato del progetto
 
-**Versione:** 0.9.1 — 27/10/2026
+**Versione:** 0.10.0 — 27/10/2026
 **Ultima tappa:** linee che seguono i binari
-**Prossimo passo:** da scegliere con Davide nel backlog (percorsi alternativi, pulsante prezzo)
+**Prossimo passo:** da scegliere con Davide nel backlog (pulsante prezzo, filtro fascia oraria)
 
 ## Cosa funziona
 - **Sito** (https://dedavi97.github.io/Dove_Arrivo/): tutta Italia, 2103
@@ -12,7 +12,7 @@
   tempo, legenda sempre visibile.
 - Toccando una meta: comune e abitanti, treni con il loro operatore, cambi,
   tempo totale, da dove arriva e dove prosegue ogni treno, quanti diretti al giorno su ogni
-  tratta e a che ora (⚠ se meno di 6); percorso evidenziato, cambi con anello
+  tratta e a che ora (⚠ se meno di 6, con il percorso "negli altri orari"); percorso evidenziato, cambi con anello
   viola; "Verifica prezzo" (Trenitalia), "Sito Trenord" se serve, "Parti da qui".
 - Impostazioni (anche quali aziende usare), Aiuto, Informazioni (fonti con le date di validità).
 - `Aggiorna_Dati.bat` aggiorna i dati da entrambe le aziende in ~12 secondi;

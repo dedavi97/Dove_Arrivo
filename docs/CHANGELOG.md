@@ -3,6 +3,13 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.10.0 — 27/10/2026
+- Percorsi alternativi: se una tratta del percorso ha pochi diretti al giorno
+  (meno di 6), la scheda mostra anche "Negli altri orari": il percorso
+  migliore senza quei treni, con i suoi diretti al giorno. Sulla mappa è la
+  linea azzurra. Esempio: Torino Porta Nuova → Racconigi, 5 diretti; negli
+  altri orari RV fino a Carmagnola + SFM fino a Racconigi.
+
 ## 0.9.1 — 27/10/2026
 - Provenienza del treno: nella scheda c'è scritto da dove arriva ogni treno
   prima della stazione in cui si sale ("arriva da Torino Porta Nuova (2

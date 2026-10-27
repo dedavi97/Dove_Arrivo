@@ -21,10 +21,7 @@
 - [x] 0.9.0 Cursore "Ore max" fino a 12 ore
 - [x] 0.9.0 Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
 - [x] 0.9.1 Provenienza del treno (scheda + linea a puntini sulla mappa)
-- [ ] Percorsi alternativi quando il diretto ha poche corse (es. Torino →
-  Racconigi, 5 diretti: mostrare anche le soluzioni con cambio che coprono le
-  altre ore). Forse si risolve col filtro fascia oraria: da valutare insieme.
-  Richiesta di Davide 27/10/2026.
+- [x] 0.10.0 Percorsi alternativi quando il diretto ha poche corse ("Negli altri orari")
 
 ## In attesa
 - Niente al momento.
