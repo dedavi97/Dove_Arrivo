@@ -17,6 +17,7 @@
   (es. Cloudflare Workers) = un pezzo di server, da creare sul suo account;
   (2) solo in locale, con Avvia_Locale.bat che fa da ponte sul suo PC.
 - [x] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
+- [x] 0.8.1 Versione nei nomi dei file del sito + server locale senza cache
 - [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
 - [ ] Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
   (es. solo Trenitalia, solo Trenord, entrambe). Richiesta di Davide 27/10/2026.
@@ -35,8 +36,6 @@
   biglietto unico; filtro/colori solo se il sistema è affidabile).
 - Alleggerire l'interfaccia.
 - Trenitalia Tper (Emilia-Romagna): Davide sta indagando sulle fonti.
-- Numero di versione nei nomi dei file del sito (es. `app.js?v=0.6.0`), così
-  dopo un aggiornamento il browser non mescola pezzi vecchi e nuovi.
 - Altri operatori regionali: Trenitalia Tper (Emilia-Romagna, Davide sta
   indagando), poi ferrovie locali (GTT, Circumvesuviana, FSE, ARST…). Con lo
   scanner a più fonti basta aggiungere una `Fonte` in scanner/fonti.py.

@@ -1,6 +1,6 @@
 # Stato del progetto
 
-**Versione:** 0.8.0 — 27/10/2026
+**Versione:** 0.8.1 — 27/10/2026
 **Ultima tappa:** linee che seguono i binari
 **Prossimo passo:** da scegliere con Davide nel backlog (ore max 12, filtro aziende, percorsi alternativi, pulsante prezzo)
 

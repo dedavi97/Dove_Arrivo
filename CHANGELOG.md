@@ -3,6 +3,11 @@
 Le versioni sono in ordine dalla più recente. I soli aggiornamenti dei dati
 (`data: aggiornamento rete GG/MM/AAAA`) non compaiono qui.
 
+## 0.8.1 — 27/10/2026
+- Dopo un aggiornamento il browser poteva mescolare file vecchi e nuovi del
+  sito e mostrare una mappa vuota: ora i file portano il numero di versione
+  e Avvia_Locale.bat dice al browser di ricontrollarli sempre.
+
 ## 0.8.0 — 27/10/2026
 - Le linee sulla mappa seguono i binari: tra due fermate passano per le
   stazioni dove il treno non si ferma (tracciato dell'orario Trenitalia),

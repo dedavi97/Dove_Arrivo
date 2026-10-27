@@ -8,7 +8,5 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-echo Sito in locale su http://localhost:8765
-echo Per fermarlo chiudi questa finestra.
 start "" http://localhost:8765/
-python -m http.server 8765 --bind 127.0.0.1 --directory docs
+python -m scanner.servi_locale 8765

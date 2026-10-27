@@ -26,6 +26,9 @@ della meta scelta, pulsante "Verifica prezzo" verso Trenitalia. Niente prezzi.
 - Tutto ciò che si scopre su ambiente e API va in questo file.
 - Versione: unica costante `VERSIONE` in `docs/versione.js`, mostrata nel footer.
   Deve coincidere con la prima voce di `CHANGELOG.md` (c'è un test).
+  **A ogni cambio di versione aggiornare anche `?v=X.Y.Z` in `docs/index.html`**
+  (style.css e i 4 script; c'è un test): senza, il browser mescola file
+  vecchi (in cache) e nuovi e la mappa resta vuota (successo con la 0.8.0).
 
 ## Formato rete.json (formato_versione 1)
 - `meta`: tipo `"Dove_Arrivo_Rete"`, `formato_versione` 1, `data_aggiornamento`,
@@ -180,7 +183,9 @@ avanti lungo le fermate. Per ogni meta il percorso più breve in minuti.
   Sotto ~500 px di larghezza la finestra headless non si restringe: per il
   formato telefono mettere il sito in un `<iframe>` largo 390 px servito dalla
   stessa origine (copia di docs/ nello scratchpad + pagina di prova).
-- `Avvia_Locale.bat`: `python -m http.server 8765 --bind 127.0.0.1 --directory docs`.
+- `Avvia_Locale.bat` (dalla 0.8.1): `python -m scanner.servi_locale 8765` =
+  http.server su docs/ con `Cache-Control: no-cache` (prima `python -m
+  http.server`, che manda solo Last-Modified: i browser tenevano i file vecchi).
 
 ## Tutta Italia (dalla 0.4.0)
 - `PERIMETRO = costruisci.ITALIA` ("Italia"): si tengono i treni con almeno

@@ -17,3 +17,13 @@ def test_versione_coincide_con_changelog():
     changelog = (RADICE / "CHANGELOG.md").read_text(encoding="utf-8")
     prima = re.search(r"^## (\d+\.\d+\.\d+)", changelog, re.M).group(1)
     assert prima == leggi_versione()
+
+
+def test_file_del_sito_con_la_versione_nel_nome():
+    """index.html chiama style.css e gli script con ?v=VERSIONE: dopo un aggiornamento il
+    browser non mescola file vecchi e nuovi. Va aggiornato insieme a VERSIONE."""
+    html = (RADICE / "docs" / "index.html").read_text(encoding="utf-8")
+    locali = re.findall(r'(?:src|href)="((?!https?:)[^"]+\.(?:js|css)[^"]*)"', html)
+    assert len(locali) == 5
+    for riferimento in locali:
+        assert riferimento.endswith(f"?v={leggi_versione()}"), riferimento
