@@ -9,7 +9,13 @@
 - [x] 0.5.0 Filtro stazioni per abitanti del comune (cursore, le altre spariscono)
 - [x] 0.6.0 Frequenza dei treni diretti nella scheda (N al giorno + orari, avviso tratte rare)
 - [x] 0.7.0 Trenord (GTFS Regione Lombardia): scanner a più fonti, stazioni unite, fonte scaduta
-- [ ] Indagine prezzi (solo report, nessun codice nell'app)
+- [x] Indagine prezzi (solo report, nessun codice nell'app) — vedi CLAUDE.md
+- [ ] Pulsante "Prezzo" nella scheda: chiede a Le Frecce il prezzo vero del
+  biglietto unico per partenza e meta scelte (richiesta di Davide 27/10/2026).
+  Ostacolo: Le Frecce non permette chiamate dal browser di altri siti (niente
+  CORS). Strade da decidere con Davide: (1) piccolo "ponte" gratuito online
+  (es. Cloudflare Workers) = un pezzo di server, da creare sul suo account;
+  (2) solo in locale, con Avvia_Locale.bat che fa da ponte sul suo PC.
 - [ ] 0.8.0 Linee che passano per le stazioni intermedie (shapes.txt)
 - [ ] Cursore "Ore max" fino a 12 ore (oggi arriva a 6).
 - [ ] Impostazioni: scegliere quali aziende mostrare e usare nel calcolo
